@@ -1,11 +1,69 @@
 // Not exactly deep voodoo, but voodoo.
-window.Ice = Ice = Class.$extend({
+kocomputed_wrapper = function(f) {
+    // Self doesn't exist at this time.
+    f.constructor = kocomputed_wrapper;
+    return f;
+
+    var obj = function(self) {
+        return _.bind(self);
+    };
+    obj.constructor = kocomputed_wrapper;
+    return obj;
+};
+
+window.Ice = Ice = Class.$extend('Ice', {
     __init__: function() {
+        var self = this;
+
         this.evChanged = IceEvent(this);
         if(Ice.INSTANCE_COUNTERS[this.$class.$classname] === undefined) {
             Ice.INSTANCE_COUNTERS[this.$class.$classname] = 0;
         }
         this.ICEID = ++Ice.INSTANCE_COUNTERS[this.$class.$classname];
+
+    },
+    __postinit__: function() {
+        // Construct a new ko.computed for THIS instance, since each one is different and should proc differently.
+        // ko computeds have context and AREN'T METHODS.
+        var self = this;
+
+        _.each(self.$class.prototype, function(v,i) {
+            /*if(kls.$name !== 'Crew') {
+                return;
+            }
+            console.log("Checking ", kls.$name, " i ", i, " v ", v, " to see if it's a kocomputed");
+            console.log(v.constructor);*/
+            if(v && v.constructor === kocomputed_wrapper) {
+                //console.log('It is!');
+                //v.self = self;
+
+                self[i] = ko.computed(function() {
+                    //console.log("Running ", self.$class.$name, i, " computed with self=", self);
+                    return v.apply(self, arguments);
+                });
+                self[i].magiced = true;
+            }
+        });
+
+    },
+    __postextend__: function(kls) {
+        _.each(kls.prototype, function(v,i) {
+            /*if(kls.$name !== 'Crew') {
+                return;
+            }
+            console.log("Checking ", kls.$name, " i ", i, " v ", v, " to see if it's a kocomputed");
+            console.log(v.constructor);*/
+            /*if(v && v.constructor === kocomputed_wrapper) {
+                console.log('It is!');
+                //v.self = self;
+
+                kls.prototype[i] = ko.computed(function() {
+                    return v.apply(this, arguments);
+                }, );
+                kls.prototype[i].magiced = true;
+            }*/
+        });
+
     },
     isa: function(kls) {
       var walk = this.$class;
@@ -57,6 +115,8 @@ Ice.isIce = function(obj) {
 Ice.isa = function(o, kls) {
     return Ice.isIce(o) && o.isa(kls);
 };
+
+Ice.kocomputed = kocomputed_wrapper;
 
 function IceObservable(holder, initial_val) {
     var obs = function() {
