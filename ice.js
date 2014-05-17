@@ -47,24 +47,21 @@ window.Ice = Ice = Class.$extend('Ice', {
 
     },
     __postextend__: function(kls) {
-        _.each(kls.prototype, function(v,i) {
-            /*if(kls.$name !== 'Crew') {
-                return;
-            }
-            console.log("Checking ", kls.$name, " i ", i, " v ", v, " to see if it's a kocomputed");
-            console.log(v.constructor);*/
-            /*if(v && v.constructor === kocomputed_wrapper) {
-                console.log('It is!');
-                //v.self = self;
-
-                kls.prototype[i] = ko.computed(function() {
-                    return v.apply(this, arguments);
-                }, );
-                kls.prototype[i].magiced = true;
-            }*/
-        });
+        if(window.Ice && window.Ice.Registry) {
+            Ice.Registry.register(kls);
+        }
 
     },
+
+    // Essentially this is just a list of attrs to serialize.
+    // Which is similar to what Ice is doing on the other side,
+    // intended to bypass all the derivative data and methods and stuff.
+    // fields is already a term being used on forms though, so I think I'm
+    // Going to rename it to keys.
+    __keys__: function() {
+        return [];
+    },
+
     isa: function(kls) {
       var walk = this.$class;
       while(walk !== undefined) {
@@ -106,6 +103,40 @@ window.Ice = Ice = Class.$extend('Ice', {
                 v.unsub(this);
             }*/
         });
+    },
+    as_jsonable: function() {
+        var self = this;
+        jsonable = {'__kls__': self.$class.$name};
+        _.each(self.__keys__(), function(key) {
+            var val = self[key] || null;
+            if(ko.isObservable(val)) {
+                val = val();
+            }
+            if(Ice.isa(val, Ice)) {
+                val = val.as_jsonable();
+            }
+            jsonable[key] = val;
+        });
+
+        return jsonable;
+    },
+    update_from_jsonable: function(jsonable) {
+
+        var self = this;
+        _.each(self.__keys__(), function(key) {
+            var val = jsonable[key];
+            if (val && val.__kls__) {
+                val = Ice.from_jsonable(val);
+            }
+            var target = self[key];
+            if(target && ko.isObservable(target)) {
+                target(val);
+            } else {
+                self[key] = val;
+            }
+        });
+
+
     }
 });
 Ice.INSTANCE_COUNTERS = {};
@@ -117,6 +148,50 @@ Ice.isa = function(o, kls) {
 };
 
 Ice.kocomputed = kocomputed_wrapper;
+
+ClassRegistry = Ice.$extend('ClassRegistry', {
+    __init__: function(kls) {
+        var self = this;
+
+        self.__typemap__ = {};
+        if(kls) {
+            self.register(kls);
+            kls.from_jsonable = _.bind(self.from_jsonable, self);
+        }
+    },
+    register: function(kls) {
+        var self = this;
+
+        self.__typemap__[kls.$name] = kls;
+    },
+    get_type: function(klsname) {
+        var self = this;
+
+        return self.__typemap__[klsname];
+    },
+    from_jsonable: function(jsonable) {
+        var self = this;
+
+        var kls = self.get_type(jsonable.__kls__);
+        if(!kls) {
+            console.error("Couldn't find __kls__ ",
+                jsonable.__kls__,
+                ' and found a class with name ',
+                 (kls? kls.$name:'not found')
+            );
+
+        }
+
+
+        var obj = kls();
+        obj.update_from_jsonable(jsonable);
+
+        return obj;
+
+    }
+});
+
+Ice.Registry = ClassRegistry(Ice);
 
 function IceObservable(holder, initial_val) {
     var obs = function() {
