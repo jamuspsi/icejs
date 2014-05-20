@@ -78,6 +78,9 @@ window.Ice = Ice = Class.$extend('Ice', {
         _.each(this, function(v,i,l) {
             if(v && v.constructor === IceObservable){
                 attrs[i] = v();
+            } else if(v && ko && ko.isObservable(v)) {
+
+                attrs[i] = v();
             } else if(typeof(v) !== 'function') {
                 attrs[i] = v;
             }
@@ -156,6 +159,9 @@ ClassRegistry = Ice.$extend('ClassRegistry', {
         self.__typemap__ = {};
         if(kls) {
             self.register(kls);
+            if(Ice.Registry && self !== Ice.Registry) {
+                Ice.Registry.register(kls);
+            }
             kls.from_jsonable = _.bind(self.from_jsonable, self);
         }
     },
@@ -172,12 +178,21 @@ ClassRegistry = Ice.$extend('ClassRegistry', {
     from_jsonable: function(jsonable) {
         var self = this;
 
+        if(Ice.isa(jsonable, Ice)) {
+            return jsonable;
+        }
+
+        if(jsonable.__kls__ ==='Decimal') {
+            return Number(jsonable.str);
+        }
+        if(jsonable.__kls__ === 'datetime') {
+            return datetime_to_Date(obj[i]);
+        }
+
         var kls = self.get_type(jsonable.__kls__);
         if(!kls) {
             console.error("Couldn't find __kls__ ",
-                jsonable.__kls__,
-                ' and found a class with name ',
-                 (kls? kls.$name:'not found')
+                jsonable.__kls__, ' for ', jsonable
             );
 
         }
@@ -192,6 +207,82 @@ ClassRegistry = Ice.$extend('ClassRegistry', {
 });
 
 Ice.Registry = ClassRegistry(Ice);
+
+
+function datetime_to_Date(obj) {
+    return new Date(obj.year, obj.month-1, obj.day, obj.hour, obj.minute, obj.second, obj.microsecond/1000)
+}
+
+Ice.loads = function (stringed) {
+    res = JSON.parse(stringed);
+
+
+    function deepsearch(obj) {
+        for(var i in obj) {
+            if(!obj.hasOwnProperty(i)) {
+                continue;
+            }
+            if(obj[i] && (obj[i].__type__ || obj[i].__kls__) == 'datetime') {
+                obj[i] = datetime_to_Date(obj[i]);
+            } else if(obj[i] && (obj[i].__type__ || obj[i].__kls__) == 'Decimal') {
+                obj[i] = Number(obj[i].str);
+            } else if(obj[i] && obj[i].__kls__) {
+                deepsearch(obj[i]);
+                obj[i] = Ice.from_jsonable(obj[i]);
+            } else if(obj[i] && typeof(obj[i]) == 'object') {
+                deepsearch(obj[i]);
+            }
+        }
+    }
+
+    deepsearch(res);
+
+    return res;
+}
+
+Ice.dumps = function(obj) {
+    function Date_to_datetime(obj) {
+        return {
+             '__type__': 'datetime',
+             'year': obj.getFullYear(),
+             'month': obj.getMonth() + 1,
+             'day': obj.getDate(),
+             'hour': obj.getHours(),
+             'minute': obj.getMinutes(),
+             'second': obj.getSeconds(),
+             'microsecond': obj.getMilliseconds() * 1000
+        };
+    }
+
+    function deepcopy(obj) {
+        var copy = obj.constructor();
+        for(var i in obj) {
+            // console.log("Copying ", i, obj[i])
+
+            if(!obj.hasOwnProperty(i)) {
+                console.log("skipping");
+                continue;
+            }
+            if(obj[i] && obj[i].constructor === Date) {
+                //console.log("It's a date");
+                copy[i] = Date_to_datetime(obj[i]);
+            } else if(obj[i] && Ice.isa(obj[i], Ice)) {
+                copy[i] = obj[i].as_jsonable();
+            } else if(obj[i] && typeof(obj[i]) == 'object') {
+                //console.log("It's an object or array");
+                copy[i] = deepcopy(obj[i]);
+            } else {
+                //console.log("It's a primitive?")
+                copy[i] = obj[i];
+            }
+        }
+        return copy;
+    }
+
+    copyobj = deepcopy(obj);
+    return JSON.stringify(copyobj);
+}
+
 
 function IceObservable(holder, initial_val) {
     var obs = function() {
