@@ -11,6 +11,21 @@ kocomputed_wrapper = function(f) {
     return obj;
 };
 
+
+function tidyObservable(dirtyobs, val) {
+    var obs = ko.observable(val);
+    //obs.tidy = window.tidyCount++;
+    obs.subscribe(function(newValue) {
+        if(!dirtyobs()) {
+            //console.log("Setting dirty for ", obs, newValue);
+            //window.dirtything = obs;
+            dirtyobs(true);
+        }
+    });
+    return obs;
+}
+
+
 window.Ice = Ice = Class.$extend('Ice', {
     __init__: function() {
         var self = this;
@@ -278,8 +293,11 @@ Ice.dumps = function(obj) {
         }
         return copy;
     }
-
-    copyobj = deepcopy(obj);
+    if(typeof(obj) == 'object') {
+        copyobj = deepcopy(obj);
+    } else {
+        copyobj = obj;
+    }
     return JSON.stringify(copyobj);
 }
 
