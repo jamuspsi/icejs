@@ -228,10 +228,34 @@ function datetime_to_Date(obj) {
     return new Date(obj.year, obj.month-1, obj.day, obj.hour, obj.minute, obj.second, obj.microsecond/1000)
 }
 
+// money formatting function
+function formatCurrency(value, times, mo) {
+    if(value === undefined || value === null) {
+        return '';
+    }
+    if(times !== undefined && times !== null) {
+        value *= times;
+    }
+
+    var fixed = Number(value).toFixed(2);
+    if(value >= 0) {
+        fixed = '$' + fixed;
+    } else {
+        fixed = '-$' + fixed.substring(1);
+    }
+
+    if(mo) {
+        fixed += ' /mo';
+    }
+    return fixed;
+};
+
 Ice.loads = function (stringed) {
-    res = JSON.parse(stringed);
+    var res = JSON.parse(stringed);
 
-
+    var wrapper = {
+        'wrapped': res
+    };
     function deepsearch(obj) {
         for(var i in obj) {
             if(!obj.hasOwnProperty(i)) {
@@ -249,10 +273,10 @@ Ice.loads = function (stringed) {
             }
         }
     }
-
-    deepsearch(res);
-
-    return res;
+    console.log('Deepsearching wrapper ', wrapper);
+    deepsearch(wrapper);
+    return wrapper.wrapped;
+    //return res;
 }
 
 Ice.dumps = function(obj) {
