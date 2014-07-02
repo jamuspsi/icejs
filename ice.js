@@ -273,7 +273,7 @@ Ice.loads = function (stringed) {
             }
         }
     }
-    console.log('Deepsearching wrapper ', wrapper);
+    //console.log('Deepsearching wrapper ', wrapper);
     deepsearch(wrapper);
     return wrapper.wrapped;
     //return res;
