@@ -46,6 +46,7 @@ function loadExternalKnockoutTemplates(src_prefix, callback) {
 function LazyTemplate(src_prefix, template) {
     var computed = LazyTemplate.computeds[template];
     if(computed) {
+        // console.log('returning computed()', computed());
         return computed();
     }
 
@@ -61,7 +62,7 @@ function LazyTemplate(src_prefix, template) {
         //console.log("Looking for", sel);
         var s = $(sel);
         if(s.length) {
-            //console.log('I am going to return the normal one.');
+            // console.log('I am going to return the normal one.', template);
             return template;
         }
 
@@ -86,7 +87,7 @@ function LazyTemplate(src_prefix, template) {
                 });
             });
         }
-        return 'not_loaded_yet.html';
+        return 'kot/not_loaded_yet.html';
     });
     computed.signal = signal;
     LazyTemplate.computeds[template] = computed;
@@ -109,6 +110,6 @@ function MonkeypatchKoTemplateBinding() {
     };
 
     // Good bye knockout template binding, brian just raped you, and you liked it :)
-    console.log("Magic!");
+    // console.log("Magic!");
     ko.bindingHandlers.template = templateWithContext;
 }
