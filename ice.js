@@ -15,14 +15,48 @@ kocomputed_wrapper = function(f) {
 function tidyObservable(dirtyobs, val) {
     var obs = ko.observable(val);
     //obs.tidy = window.tidyCount++;
-    obs.subscribe(function(newValue) {
+    obs.subscribeChanged(function(newValue, oldValue) {
+        //console.log("changed, newvalue is ", newValue, "oldvalue is ", oldValue);
+        if(newValue === oldValue) {
+            return;
+        }
+        if(newValue === "" && oldValue === null) {
+            obs(null); // No, go back to null.
+            return;
+        }
+        if(newValue === null && oldValue === "") {
+            return;
+            // this is from me coercing it in the immediately preceding if.
+        }
         if(!dirtyobs()) {
-            //console.log("Setting dirty for ", obs, newValue);
             //window.dirtything = obs;
             dirtyobs(true);
         }
     });
     return obs;
+}
+
+if(window.ko) {
+    /* Stolen from https://stackoverflow.com/questions/12822954/get-previous-value-of-an-observable-in-subscribe-of-same-observable */
+
+    ko.subscribable.fn.subscribeChanged = function (callback) {
+        var oldValue;
+        this.subscribe(function (_oldValue) {
+            oldValue = _oldValue;
+        }, this, 'beforeChange');
+
+        this.subscribe(function (newValue) {
+            callback(newValue, oldValue);
+        });
+    };
+}
+
+if(window.moment) {
+    window.moment.fn.strftime = function() {
+        console.log('arguments is ', arguments);
+        console.log('this._i.strftime is ', this._i.strftime);
+        return this._i.strftime.apply(this._i, arguments);
+    }
 }
 
 
@@ -225,7 +259,11 @@ Ice.Registry = ClassRegistry(Ice);
 
 
 function datetime_to_Date(obj) {
-    return new Date(obj.year, obj.month-1, obj.day, obj.hour, obj.minute, obj.second, obj.microsecond/1000)
+    var val = new Date(obj.year, obj.month-1, obj.day, obj.hour, obj.minute, obj.second, obj.microsecond/1000);
+    if(window.moment) {
+        return moment(val);
+    }
+    return val;
 }
 
 // money formatting function
