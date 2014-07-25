@@ -53,8 +53,6 @@ if(window.ko) {
 
 if(window.moment) {
     window.moment.fn.strftime = function() {
-        console.log('arguments is ', arguments);
-        console.log('this._i.strftime is ', this._i.strftime);
         return this._i.strftime.apply(this._i, arguments);
     }
 }
