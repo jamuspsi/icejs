@@ -87,7 +87,7 @@ function LazyTemplate(src_prefix, template) {
                 });
             });
         }
-        return 'kot/not_loaded_yet.html';
+        return 'not_loaded_yet.html';
     });
     computed.signal = signal;
     LazyTemplate.computeds[template] = computed;
