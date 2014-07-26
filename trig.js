@@ -8,6 +8,5 @@ _.each(['sin', 'cos', 'tan', 'sec', 'csc', 'cot'], function(i){
 	};
 });
 
-console.log("Setting trig's pi");
 Trig.pi = Trig.Pi = Trig.PI = Math.PI;
 Trig.twopi = 2 * Trig.pi;
