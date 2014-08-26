@@ -377,7 +377,7 @@ function IceObservable(holder, initial_val) {
                 changed: changed,
                 val: obs.val,
                 oldval: oldval,
-                eventname: 'Set',
+                eventname: 'Set'
             };
             var event_firer = function() {
                 obs.fire(eargs);
