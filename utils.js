@@ -14,10 +14,10 @@ function ShowFullErrorStacks() {
 }
 
 function loadExternalKnockoutTemplates(src_prefix, callback) {
-    var sel = 'script[kot]:not([loaded])';
-    $toload = $(sel);
+    var sel = 'div[kot]:not([loaded])';
+    var $toload = $(sel);
     function oncomplete() {
-        //console.log("Loaded this", this);
+        console.log("Loaded this", this);
         this.attr('loaded', true);
         var $not_loaded = $(sel);
         if(!$not_loaded.length) {
@@ -36,10 +36,9 @@ function loadExternalKnockoutTemplates(src_prefix, callback) {
         $elem.attr('id', kot);
         $elem.attr('type', 'text/html');
         $elem.attr('src', src);
-        //_.defer(function() {
-            //console.log("trying to load remote src ", src);
-            $elem.load(src, _.bind(oncomplete, $elem));
-        //});
+        // console.log("Trying to load for ", $elem);
+        $elem.load(src, _.bind(oncomplete, $elem));
+        // console.log("Loaded in theory.");
     });
 }
 
@@ -58,7 +57,8 @@ function LazyTemplate(src_prefix, template) {
     computed = window.lt_obs = ko.computed(function() {
         signal();
         // Try to find the template.
-        var sel = 'script[type="text/html"][loaded][id="' + template + '"]';
+        var sel = 'div[type="text/html"][loaded][id="' + template + '"]';
+        sel += ',script[type="text/html"][loaded][id="' + template + '"]';
         //console.log("Looking for", sel);
         var s = $(sel);
         if(s.length) {
@@ -67,16 +67,16 @@ function LazyTemplate(src_prefix, template) {
         }
 
         // Are we loading it?
-        s = $('script[type="text/html"][id="' + template + '"]');
+        s = $('div[type="text/html"][id="' + template + '"],script[type="text/html"][id="' + template + '"]');
         if(!s.length) {
             // Begin loading it.
-            s = $('<script kot="' + template + '">');
+            s = $('<div kot="' + template + '" type="text/html" style="display: none">');
             s.appendTo($('body'));
             //console.log(loadExternalKnockoutTemplates);
             loadExternalKnockoutTemplates(src_prefix, function() {
                 // One or more may have finished.
                 _.each(LazyTemplate.signals, function(signal, template) {
-                    var sel = 'script[type="text/html"][loaded][id="' + template + '"]';
+                    var sel = 'div[type="text/html"][loaded][id="' + template + '"]';
                     if($(sel).length) {
                         // Signal this computed to re-evaluate.
                         console.log('Going to signal ', template, 'that it is loaded.');
