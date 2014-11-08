@@ -330,7 +330,8 @@ Ice.dumps = function(obj) {
     }
 
     function deepcopy(obj) {
-        var copy = obj.constructor();
+        var copy = obj.constructor() || {};
+        //console.log('copy is ', copy, 'obj is ', obj, 'obj.constructor is', obj.constructor)
         for(var i in obj) {
             // console.log("Copying ", i, obj[i])
 
@@ -352,6 +353,9 @@ Ice.dumps = function(obj) {
             }
         }
         return copy;
+    }
+    if(obj && Ice.isa(obj, Ice)) {
+        obj = obj.as_jsonable();
     }
     if(typeof(obj) == 'object') {
         copyobj = deepcopy(obj);
