@@ -158,7 +158,7 @@ window.Ice = Ice = Class.$extend('Ice', {
         var self = this;
         var jsonable = {'__kls__': self.$class.$name};
         _.each(self.__keys__(), function(key) {
-            var val = self[key] || null;
+            var val = key in self ? self[key] : null;
             if(ko.isObservable(val)) {
                 val = val();
             }
