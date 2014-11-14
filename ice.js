@@ -156,7 +156,7 @@ window.Ice = Ice = Class.$extend('Ice', {
     },
     as_jsonable: function() {
         var self = this;
-        jsonable = {'__kls__': self.$class.$name};
+        var jsonable = {'__kls__': self.$class.$name};
         _.each(self.__keys__(), function(key) {
             var val = self[key] || null;
             if(ko.isObservable(val)) {
@@ -233,7 +233,7 @@ ClassRegistry = Ice.$extend('ClassRegistry', {
             return Number(jsonable.str);
         }
         if(jsonable.__kls__ === 'datetime') {
-            return datetime_to_Date(obj[i]);
+            return datetime_to_Date(jsonable);
         }
 
         var kls = self.get_type(jsonable.__kls__);
@@ -329,29 +329,37 @@ Ice.dumps = function(obj) {
         };
     }
 
-    function deepcopy(obj) {
-        var copy = obj.constructor() || {};
-        //console.log('copy is ', copy, 'obj is ', obj, 'obj.constructor is', obj.constructor)
-        for(var i in obj) {
-            // console.log("Copying ", i, obj[i])
+    function deepcopy(searchobj) {
+        var copy;
+        if(searchobj && Ice.isa(searchobj, Ice)) {
+            return deepcopy(searchobj.as_jsonable());
+        } else {
+            copy = searchobj.constructor() || {};
+        }
+        // console.log("Deepcopying, starting with ", copy, copy.cid);
+        window.debug = copy;
+        for(var i in searchobj) {
+            // console.log("Copying ", i, searchobj[i])
 
-            if(!obj.hasOwnProperty(i)) {
-                console.log("skipping");
+            if(!searchobj.hasOwnProperty(i)) {
+                //console.log("skipping ", i);
                 continue;
             }
-            if(obj[i] && obj[i].constructor === Date) {
+            if(searchobj[i] && searchobj[i].constructor === Date) {
                 //console.log("It's a date");
-                copy[i] = Date_to_datetime(obj[i]);
-            } else if(obj[i] && Ice.isa(obj[i], Ice)) {
-                copy[i] = obj[i].as_jsonable();
-            } else if(obj[i] && typeof(obj[i]) == 'object') {
+                copy[i] = Date_to_datetime(searchobj[i]);
+            } else if(searchobj[i] && Ice.isa(searchobj[i], Ice)) {
+                //deepcopy(searchobj[i])
+                copy[i] = deepcopy(searchobj[i].as_jsonable());
+            } else if(searchobj[i] && typeof(searchobj[i]) == 'object') {
                 //console.log("It's an object or array");
-                copy[i] = deepcopy(obj[i]);
+                copy[i] = deepcopy(searchobj[i]);
             } else {
                 //console.log("It's a primitive?")
-                copy[i] = obj[i];
+                copy[i] = searchobj[i];
             }
         }
+        // console.log("deeopcopy returning ", copy, copy.cid)
         return copy;
     }
     if(obj && Ice.isa(obj, Ice)) {
