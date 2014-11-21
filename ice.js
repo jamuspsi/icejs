@@ -12,8 +12,15 @@ kocomputed_wrapper = function(f) {
 };
 
 
-function tidyObservable(dirtyobs, val) {
-    var obs = ko.observable(val);
+function tidyObservable(dirtyobs, val, is_already_wrapped) {
+    var obs;
+    if(!is_already_wrapped) {
+        obs = ko.observable(val);
+    } else {
+        //console.log("Not wrapping because obs is ", obs);
+        obs = val;
+    }
+    //var
     //obs.tidy = window.tidyCount++;
     obs.subscribeChanged(function(newValue, oldValue) {
         //console.log("changed, newvalue is ", newValue, "oldvalue is ", oldValue);
