@@ -14,7 +14,7 @@ function ShowFullErrorStacks() {
 }
 
 function loadExternalKnockoutTemplates(src_prefix, callback) {
-    var sel = 'div[kot]:not([loaded])';
+    var sel = 'div[kot]:not([loaded]),script[kot]:not([loaded])';
     var $toload = $(sel);
     function oncomplete() {
         console.log("Loaded this", this);
@@ -43,6 +43,12 @@ function loadExternalKnockoutTemplates(src_prefix, callback) {
 }
 
 function LazyTemplate(src_prefix, template) {
+    if(template === undefined) {
+        template = src_prefix;
+        src_prefix = LazyTemplate.default_path;
+        console.log("Auto prepending ", src_prefix, " to ", template);
+    }
+
     var computed = LazyTemplate.computeds[template];
     if(computed) {
         // console.log('returning computed()', computed());
@@ -95,6 +101,7 @@ function LazyTemplate(src_prefix, template) {
 }
 LazyTemplate.computeds = {};
 LazyTemplate.signals = {};
+LazyTemplate.default_path;
 
 function MonkeypatchKoTemplateBinding() {
     var templateWithContext = _.omit(ko.bindingHandlers.template);
