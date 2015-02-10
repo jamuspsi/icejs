@@ -11,6 +11,28 @@ kocomputed_wrapper = function(f) {
     return obj;
 };
 
+function componentObservable(val) {
+    var obs;
+    if(ko.isObservable(val)) {
+        obs = val;
+    } else {
+        obs = ko.observable(val);
+    }
+    obs.isComponent = true;
+    return obs;
+}
+
+function componentListObservable(val) {
+    var obs;
+    if(ko.isObservable(val)) {
+        obs = val;
+    } else {
+        obs = ko.observableArray(val || []);
+    }
+    obs.isComponentList = true;
+    return obs;
+}
+
 
 function tidyObservable(dirtyobs, val, is_already_wrapped) {
     var obs;
@@ -36,6 +58,7 @@ function tidyObservable(dirtyobs, val, is_already_wrapped) {
             // this is from me coercing it in the immediately preceding if.
         }
         if(!dirtyobs()) {
+            console.log("Making dirty from ", oldValue, newValue);
             //window.dirtything = obs;
             dirtyobs(true);
         }
@@ -70,8 +93,8 @@ window.Ice = Ice = Class.$extend('Ice', {
         var self = this;
 
         this.evChanged = IceEvent(this);
-        if(Ice.INSTANCE_COUNTERS[this.$class.$classname] === undefined) {
-            Ice.INSTANCE_COUNTERS[this.$class.$classname] = 0;
+        if(Ice.INSTANCE_COUNTERS[this.$class.$name] === undefined) {
+            Ice.INSTANCE_COUNTERS[this.$class.$name] = 0;
         }
         this.ICEID = ++Ice.INSTANCE_COUNTERS[this.$class.$classname];
 
@@ -176,6 +199,28 @@ window.Ice = Ice = Class.$extend('Ice', {
         });
 
         return jsonable;
+    },
+    as_patch: function() {
+        var self = this;
+        var patch = {};
+        _.each(self.__keys__(), function(key) {
+            var val = key in self ? self[key] : null;
+            if(ko.isObservable(val)) {
+                if(val.isComponentList) {
+                    val = _.map(val(), function(component) {
+                        return component ? component.as_patch() : component;
+                    });
+                } else if(val.isComponent) {
+                    var component = val();
+                    val = component ? component.as_patch() : component;
+
+                } else {
+                    val = val();
+                }
+            }
+            patch[key] = val;
+        });
+        return patch;
     },
     update_from_jsonable: function(jsonable) {
 
