@@ -58,7 +58,7 @@ function tidyObservable(dirtyobs, val, is_already_wrapped) {
             // this is from me coercing it in the immediately preceding if.
         }
         if(!dirtyobs()) {
-            console.log("Making dirty from ", oldValue, newValue);
+            // console.log("Making dirty from ", oldValue, newValue);
             //window.dirtything = obs;
             dirtyobs(true);
         }
@@ -200,10 +200,20 @@ window.Ice = Ice = Class.$extend('Ice', {
 
         return jsonable;
     },
+    __patchkeys__: function() {
+        return this.keys();
+    },
+    __nopatch__: function() {
+        return [];
+    },
+
     as_patch: function() {
         var self = this;
         var patch = {};
-        _.each(self.__keys__(), function(key) {
+
+        var patchkeys = _.difference(self.__patchkeys__(), self.__nopatch__());
+
+        _.each(patchkeys, function(key) {
             var val = key in self ? self[key] : null;
             if(ko.isObservable(val)) {
                 if(val.isComponentList) {
