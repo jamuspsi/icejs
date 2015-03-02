@@ -13,6 +13,34 @@ function ShowFullErrorStacks() {
         };
 }
 
+luhn = function(cardNumber) {
+    if(typeof cardNumber !== 'string' || cardNumber.length < 2)
+        return false;
+    var digits = cardNumber.split('').reverse().map(function(x) {
+        return parseInt(x, 10);
+    }).filter(function(x) {
+        return !isNaN(x);
+    });
+    var s1 = digits.filter(function(x, i) {
+        return i % 2 === 0;
+    }).reduce(function(a, x) {
+        return a + x;
+    }, 0);
+    var s2 = digits.filter(function(x, i) {
+        return i % 2 === 1;
+    }).map(function(x) {
+        return (x * 2).toString().split('').reduce(function(a, x) {
+            return a + parseInt(x, 10);
+        }, 0);
+    }).reduce(function(a, x) {
+        return a + x;
+    }, 0);
+    return (s1 + s2) % 10 === 0;
+};
+
+
+
+
 function loadExternalKnockoutTemplates(src_prefix, callback) {
     var sel = 'div[kot]:not([loaded]),script[kot]:not([loaded])';
     var $toload = $(sel);
@@ -119,4 +147,116 @@ function MonkeypatchKoTemplateBinding() {
     // Good bye knockout template binding, brian just raped you, and you liked it :)
     // console.log("Magic!");
     ko.bindingHandlers.template = templateWithContext;
+}
+
+
+var moneyObs = function(init) {
+    var obs = ko.observable(0);
+    var fixed = ko.computed({
+        read: function() {
+            return obs().toFixed(2);
+        },
+        write: function(val) {
+            var parsed = parseFloat(val, 10);
+            if(isNaN(parsed)) {
+                result.notifySubscribers(obs());
+                return;
+            }
+            obs(parseFloat(parsed, 10));
+        }
+    });
+
+    obs.fixed = fixed;
+    obs(init||0);
+    //result(init);
+    return fixed;
+
+    /*result.fixed = ko.comput
+    return result;*/
+};
+
+
+function quantityObservable(initial) {
+    var internal_obs = ko.observable(initial);
+    var computed = ko.computed({
+        'read': internal_obs,
+        'write': function(new_val) {
+            console.log('test', new_val, Number(new_val), isNaN(Number(new_val)));
+            if(isNaN(Number(new_val)) || new_val === '') {
+                computed.revert();
+                return;
+            }
+            if(new_val < 1) {
+                internal_obs(1);
+                computed.revert();
+
+            } else {
+                internal_obs(Number(new_val));
+            }
+        }
+
+    });
+    computed.revert = function () {
+        computed.notifySubscribers(computed());
+        internal_obs.notifySubscribers(internal_obs());
+    };
+    return computed;
+}
+
+function cloneObservable(obs) {
+    return ko.computed({
+        read: obs,
+        write: obs,
+    });
+}
+
+
+function clampObservable(obs, min, max) {
+    var clamped = ko.computed({
+        read: obs,
+        write: function(val) {
+            if(min !== undefined && val < min) {
+                val = min;
+            } else if(max !== undefined && val > max) {
+                val = max;
+            }
+            obs(max);
+            clamped.notifySubscribers(clamped());
+        }
+    });
+    return clamped;
+}
+
+
+
+function tidyObservable(dirtyobs, val, is_already_wrapped) {
+    var obs;
+    if(!is_already_wrapped) {
+        obs = ko.observable(val);
+    } else {
+        //console.log("Not wrapping because obs is ", obs);
+        obs = val;
+    }
+    //var
+    //obs.tidy = window.tidyCount++;
+    obs.subscribeChanged(function(newValue, oldValue) {
+        //console.log("changed, newvalue is ", newValue, "oldvalue is ", oldValue);
+        if(newValue === oldValue) {
+            return;
+        }
+        if(newValue === "" && oldValue === null) {
+            obs(null); // No, go back to null.
+            return;
+        }
+        if(newValue === null && oldValue === "") {
+            return;
+            // this is from me coercing it in the immediately preceding if.
+        }
+        if(!dirtyobs()) {
+            // console.log("Making dirty from ", oldValue, newValue);
+            //window.dirtything = obs;
+            dirtyobs(true);
+        }
+    });
+    return obs;
 }

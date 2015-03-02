@@ -34,38 +34,6 @@ function componentListObservable(val) {
 }
 
 
-function tidyObservable(dirtyobs, val, is_already_wrapped) {
-    var obs;
-    if(!is_already_wrapped) {
-        obs = ko.observable(val);
-    } else {
-        //console.log("Not wrapping because obs is ", obs);
-        obs = val;
-    }
-    //var
-    //obs.tidy = window.tidyCount++;
-    obs.subscribeChanged(function(newValue, oldValue) {
-        //console.log("changed, newvalue is ", newValue, "oldvalue is ", oldValue);
-        if(newValue === oldValue) {
-            return;
-        }
-        if(newValue === "" && oldValue === null) {
-            obs(null); // No, go back to null.
-            return;
-        }
-        if(newValue === null && oldValue === "") {
-            return;
-            // this is from me coercing it in the immediately preceding if.
-        }
-        if(!dirtyobs()) {
-            // console.log("Making dirty from ", oldValue, newValue);
-            //window.dirtything = obs;
-            dirtyobs(true);
-        }
-    });
-    return obs;
-}
-
 if(window.ko) {
     /* Stolen from https://stackoverflow.com/questions/12822954/get-previous-value-of-an-observable-in-subscribe-of-same-observable */
 
@@ -84,7 +52,7 @@ if(window.ko) {
 if(window.moment) {
     window.moment.fn.strftime = function() {
         return this._i.strftime.apply(this._i, arguments);
-    }
+    };
 }
 
 
@@ -201,7 +169,7 @@ window.Ice = Ice = Class.$extend('Ice', {
         return jsonable;
     },
     __patchkeys__: function() {
-        return this.keys();
+        return this.__keys__();
     },
     __nopatch__: function() {
         return [];
