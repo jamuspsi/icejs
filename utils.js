@@ -159,7 +159,7 @@ var moneyObs = function(init) {
         write: function(val) {
             var parsed = parseFloat(val, 10);
             if(isNaN(parsed)) {
-                result.notifySubscribers(obs());
+                fixed.notifySubscribers(obs());
                 return;
             }
             obs(parseFloat(parsed, 10));
@@ -169,7 +169,7 @@ var moneyObs = function(init) {
     obs.fixed = fixed;
     obs(init||0);
     //result(init);
-    return fixed;
+    return obs;
 
     /*result.fixed = ko.comput
     return result;*/
