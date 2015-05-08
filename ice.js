@@ -152,9 +152,12 @@ window.Ice = Ice = Class.$extend('Ice', {
             }*/
         });
     },
+    python_kls: function() {
+        return this.$class.$name;
+    },
     as_jsonable: function() {
         var self = this;
-        var jsonable = {'__kls__': self.$class.$name};
+        var jsonable = {'__kls__': self.python_kls()};
         _.each(self.__keys__(), function(key) {
             var val = key in self ? self[key] : null;
             if(ko.isObservable(val)) {
@@ -343,7 +346,7 @@ Ice.loads = function (stringed) {
     deepsearch(wrapper);
     return wrapper.wrapped;
     //return res;
-}
+};
 
 Ice.dumps = function(obj) {
     function Date_to_datetime(obj) {
@@ -363,6 +366,9 @@ Ice.dumps = function(obj) {
         var copy;
         if(searchobj && Ice.isa(searchobj, Ice)) {
             return deepcopy(searchobj.as_jsonable());
+        } else if (window.moment && window.moment.isMoment && window.moment.isMoment(searchobj)) {
+            return searchobj._d;
+
         } else {
             copy = searchobj.constructor() || {};
         }
@@ -378,6 +384,9 @@ Ice.dumps = function(obj) {
             if(searchobj[i] && searchobj[i].constructor === Date) {
                 //console.log("It's a date");
                 copy[i] = Date_to_datetime(searchobj[i]);
+            } else if(searchobj[i] && window.moment && window.moment.isMoment && window.moment.isMoment(searchobj[i])) {
+                //console.log("It's a date");
+                copy[i] = Date_to_datetime(searchobj[i]._d);
             } else if(searchobj[i] && Ice.isa(searchobj[i], Ice)) {
                 //deepcopy(searchobj[i])
                 copy[i] = deepcopy(searchobj[i].as_jsonable());
@@ -462,7 +471,7 @@ function IceObservable(holder, initial_val) {
     }
 
     return obs;
-}
+    }
 
 ObservableMethods = {
     fire: function(eargs) {

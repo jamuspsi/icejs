@@ -141,12 +141,35 @@ function MonkeypatchKoTemplateBinding() {
         var extra_context = _.omit(options || {}, ['data', 'name', 'as']);
         ko.utils.extend(context, {context: extra_context});
 
-        return ko.bindingHandlers.template.baseupdate.apply(this, arguments);
+        return templateWithContext.baseupdate.apply(this, arguments);
     };
 
     // Good bye knockout template binding, brian just raped you, and you liked it :)
     // console.log("Magic!");
     ko.bindingHandlers.template = templateWithContext;
+}
+
+function MonkeypatchKoWithBinding() {
+    ko.bindingHandlers.single_with = ko.bindingHandlers.with;
+
+    // This with takes multiple attributes as {}, and keeps those in scope in further children scopes
+    // as opposed to the normal with, which will lose them when $data changes and so the implicit $data[] lookup fails.
+    // Taken straight out of knockout.  http://knockoutjs.com/documentation/custom-bindings-controlling-descendant-bindings.html
+    ko.bindingHandlers.with = {
+        init: function(element, valueAccessor, allBindings, viewModel, bindingContext) {
+            // Make a modified binding context, with a extra properties, and apply it to descendant elements
+            var childBindingContext = bindingContext.createChildContext(
+                bindingContext.$rawData,
+                null, // Optionally, pass a string here as an alias for the data item in descendant contexts
+                function(context) {
+                    ko.utils.extend(context, valueAccessor());
+                });
+            ko.applyBindingsToDescendants(childBindingContext, element);
+
+            // Also tell KO *not* to bind the descendants itself, otherwise they will be bound twice
+            return { controlsDescendantBindings: true };
+        }
+    };
 }
 
 
