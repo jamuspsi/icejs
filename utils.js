@@ -11,6 +11,28 @@ function ShowFullErrorStacks() {
                     }
                 console.error('Error: ' + errMsg);
         };
+
+        (function() {
+              var existing = ko.bindingProvider.instance;
+
+                ko.bindingProvider.instance = {
+                    nodeHasBindings: existing.nodeHasBindings,
+                    getBindings: function(node, bindingContext) {
+                        var bindings;
+                        try {
+                           bindings = existing.getBindings(node, bindingContext);
+                        }
+                        catch (ex) {
+                           if (window.console && console.log) {
+                               console.log("binding error", ex.message, node, bindingContext);
+                           }
+                        }
+
+                        return bindings;
+                    }
+                };
+
+            })();
 }
 
 luhn = function(cardNumber) {
@@ -238,15 +260,24 @@ function clampObservable(obs, min, max) {
     var clamped = ko.computed({
         read: obs,
         write: function(val) {
-            if(min !== undefined && val < min) {
+            if(isNaN(Number(val)) || val === '') {
+                clamped.revert();
+                return;
+            }
+
+            if(min !== undefined && min !== null && val < min) {
                 val = min;
-            } else if(max !== undefined && val > max) {
+            } else if(max !== undefined && max !== null && val > max) {
                 val = max;
             }
-            obs(max);
+            obs(Number(val));
             clamped.notifySubscribers(clamped());
         }
     });
+    clamped.revert = function () {
+        computed.notifySubscribers(computed());
+        internal_obs.notifySubscribers(internal_obs());
+    };
     return clamped;
 }
 
@@ -283,3 +314,29 @@ function tidyObservable(dirtyobs, val, is_already_wrapped) {
     });
     return obs;
 }
+
+// http://stackoverflow.com/questions/18016718/using-knockout-js-how-do-bind-a-date-property-to-a-html5-date-picker
+ko.bindingHandlers.datePicker = {
+    init: function (element, valueAccessor, allBindingsAccessor, viewModel) {
+        // Register change callbacks to update the model
+        // if the control changes.
+        ko.utils.registerEventHandler(element, "change", function () {
+            var value = valueAccessor();
+            var target_date = element.valueAsDate;
+            var truncated = new Date(target_date.getFullYear(), target_date.getMonth(), target_date.getDate());
+            //console.log("value in the thing is ", element.valueAsDate);
+            value(truncated);
+        });
+    },
+    // Update the control whenever the view model changes
+    update: function (element, valueAccessor, allBindingsAccessor, viewModel) {
+        var value =  valueAccessor();
+        var unwrapped = ko.utils.unwrapObservable(value());
+        //console.log("Unwrapped is now ", unwrapped);
+        if(unwrapped === undefined || unwrapped === null) {
+            element.value = '';
+        } else {
+            element.valueAsDate = unwrapped;//.toISOString();
+        }
+    }
+};
