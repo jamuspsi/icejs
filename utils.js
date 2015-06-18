@@ -195,24 +195,40 @@ function MonkeypatchKoWithBinding() {
 }
 
 
-var moneyObs = function(init) {
-    var obs = ko.observable(0);
+var moneyObs = function(init, nullable) {
+    function coerce(val) {
+        if(val === '' || val === null || val === "undefined") {
+            if(nullable) {
+                return null;
+            } else {
+                return 0;
+            }
+        }
+        return parseFloat(val, 10);
+
+    }
+
+    var obs = ko.observable(coerce(init));
     var fixed = ko.computed({
         read: function() {
+            if(obs() === null) {
+                return '';
+            }
             return obs().toFixed(2);
         },
         write: function(val) {
-            var parsed = parseFloat(val, 10);
+            var parsed = coerce(val);
+
             if(isNaN(parsed)) {
                 fixed.notifySubscribers(obs());
                 return;
             }
-            obs(parseFloat(parsed, 10));
+            obs(parsed);
         }
     });
 
     obs.fixed = fixed;
-    obs(init||0);
+    obs(obs());
     //result(init);
     return obs;
 
@@ -226,7 +242,6 @@ function quantityObservable(initial) {
     var computed = ko.computed({
         'read': internal_obs,
         'write': function(new_val) {
-            console.log('test', new_val, Number(new_val), isNaN(Number(new_val)));
             if(isNaN(Number(new_val)) || new_val === '') {
                 computed.revert();
                 return;
@@ -242,6 +257,7 @@ function quantityObservable(initial) {
 
     });
     computed.revert = function () {
+
         computed.notifySubscribers(computed());
         internal_obs.notifySubscribers(internal_obs());
     };
@@ -260,6 +276,7 @@ function clampObservable(obs, min, max) {
     var clamped = ko.computed({
         read: obs,
         write: function(val) {
+
             if(isNaN(Number(val)) || val === '') {
                 clamped.revert();
                 return;
@@ -271,12 +288,13 @@ function clampObservable(obs, min, max) {
                 val = max;
             }
             obs(Number(val));
-            clamped.notifySubscribers(clamped());
+            clamped.revert();
+
         }
     });
     clamped.revert = function () {
-        computed.notifySubscribers(computed());
-        internal_obs.notifySubscribers(internal_obs());
+        obs.notifySubscribers(obs());
+        clamped.notifySubscribers(clamped());
     };
     return clamped;
 }
@@ -309,6 +327,8 @@ function tidyObservable(dirtyobs, val, is_already_wrapped) {
         if(!dirtyobs()) {
             // console.log("Making dirty from ", oldValue, newValue);
             //window.dirtything = obs;
+            dirtyobs.newValue=newValue;
+            dirtyobs.oldValue=oldValue;
             dirtyobs(true);
         }
     });
