@@ -154,6 +154,7 @@ LazyTemplate.signals = {};
 LazyTemplate.default_path;
 
 function MonkeypatchKoTemplateBinding() {
+    console.log("Monkeypatched ko template");
     var templateWithContext = _.omit(ko.bindingHandlers.template);
     templateWithContext.baseupdate = templateWithContext.update;
     templateWithContext.update = function(element, valueAccessor, allBindings, data, context) {
@@ -161,7 +162,8 @@ function MonkeypatchKoTemplateBinding() {
         var options = ko.utils.unwrapObservable(valueAccessor());
 
         var extra_context = _.omit(options || {}, ['data', 'name', 'as']);
-        ko.utils.extend(context, {context: extra_context});
+        console.log("Extending context with more:", extra_context);
+        ko.utils.extend(context, {more_stuff: extra_context});
 
         return templateWithContext.baseupdate.apply(this, arguments);
     };
