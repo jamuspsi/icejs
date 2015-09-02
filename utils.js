@@ -163,7 +163,7 @@ function MonkeypatchKoTemplateBinding() {
 
         var extra_context = _.omit(options || {}, ['data', 'name', 'as']);
         // console.log("Extending context with more:", extra_context);
-        ko.utils.extend(context, {more_stuff: extra_context});
+        ko.utils.extend(context, extra_context);
 
         return templateWithContext.baseupdate.apply(this, arguments);
     };
