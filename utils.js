@@ -216,6 +216,9 @@ var moneyObs = function(init, nullable) {
             if(obs() === null) {
                 return '';
             }
+            if(!obs().toFixed) {
+                console.log("Something's wrong with a money observable.  It has ", obs(), "in it, which isn't a number.");
+            }
             return obs().toFixed(2);
         },
         write: function(val) {
@@ -230,6 +233,53 @@ var moneyObs = function(init, nullable) {
     });
 
     obs.fixed = fixed;
+    obs(obs());
+    //result(init);
+    return obs;
+
+    /*result.fixed = ko.comput
+    return result;*/
+};
+
+
+var dateObservable = function(init, nullable, fmt) {
+    if(nullable === undefined) nullable = true;
+
+    function coerce(val) {
+        if(val === '' || val === null || val === "undefined") {
+            if(nullable) {
+                return null;
+            } else {
+                return new Date();
+            }
+        }
+        return new Date(val);
+
+    }
+
+    var obs = ko.observable(coerce(init));
+    var date = ko.computed({
+        read: function() {
+            if(obs() === null) {
+                return '';
+            }
+            if(!obs() instanceof Date) {
+                console.log("Something's wrong with a date observable.  It has ", obs(), "in it, which isn't a date.");
+            }
+            return moment(obs()).strftime(fmt);
+        },
+        write: function(val) {
+            var parsed = coerce(val);
+
+            if(isNaN(parsed)) {
+                date.notifySubscribers(obs());
+                return;
+            }
+            obs(parsed);
+        }
+    });
+
+    obs.date = date;
     obs(obs());
     //result(init);
     return obs;
