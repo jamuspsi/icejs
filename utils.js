@@ -302,6 +302,10 @@ function quantityObservable(initial) {
                 computed.revert();
                 return;
             }
+            if(new_val % 1 !== 0) {
+                computed.revert();
+                return;
+            }
             if(new_val < 1) {
                 internal_obs(1);
                 computed.revert();
