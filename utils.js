@@ -332,12 +332,23 @@ function cloneObservable(obs) {
 }
 
 
-function clampObservable(obs, min, max) {
+function clampObservable(obs, min, max, nullable) {
     var clamped = ko.computed({
         read: obs,
         write: function(val) {
 
-            if(isNaN(Number(val)) || val === '') {
+            if(val === '') {
+                if(!nullable) {
+                    clamped.revert();
+                    return;
+                }
+                else {
+                    obs(null);
+                    return;
+                }
+            }
+
+            if(isNaN(Number(val))) {
                 clamped.revert();
                 return;
             }
@@ -356,7 +367,8 @@ function clampObservable(obs, min, max) {
         obs.notifySubscribers(obs());
         clamped.notifySubscribers(clamped());
     };
-    return clamped;
+    obs.clamped = clamped;
+    return obs;
 }
 
 
