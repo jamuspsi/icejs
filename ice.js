@@ -349,6 +349,11 @@ Ice.loads = function (stringed) {
 };
 
 Ice.dumps = function(obj) {
+    var copyobj = Ice.to_javascript_object(obj);
+    return JSON.stringify(copyobj);
+}
+
+Ice.to_javascript_object = function(obj) {
     function Date_to_datetime(obj) {
         return {
              '__type__': 'datetime',
@@ -393,6 +398,8 @@ Ice.dumps = function(obj) {
             } else if(searchobj[i] && typeof(searchobj[i]) == 'object') {
                 //console.log("It's an object or array");
                 copy[i] = deepcopy(searchobj[i]);
+            } else if(typeof(searchobj[i]) === 'number' && searchobj[i] % 1) {
+                copy[i] = {'__kls__': 'Decimal', 'str': searchobj[i].toString()};
             } else {
                 //console.log("It's a primitive?")
                 copy[i] = searchobj[i];
@@ -409,7 +416,7 @@ Ice.dumps = function(obj) {
     } else {
         copyobj = obj;
     }
-    return JSON.stringify(copyobj);
+    return copyobj;
 }
 
 
