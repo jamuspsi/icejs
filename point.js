@@ -1,5 +1,5 @@
 
-Point = Class.$extend({
+Point = Ice.$extend('Point', {
 	__init__: function(x, y) {
 		if(!_.has(x, 'left')) {
 			this.x = this.left = x;
@@ -34,6 +34,9 @@ Point = Class.$extend({
 	},
 	size: function() {
 		return {width: this.x, height: this.y};
+	},
+	times: function(mult) {
+		return new Point(this.x * mult, this.y * mult);
 	}
 });
 
