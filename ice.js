@@ -353,6 +353,23 @@ Ice.dumps = function(obj) {
     return JSON.stringify(copyobj);
 }
 
+Ice.table = function(obj) {
+    var keys;
+    if(!Array.isArray(obj)) {
+        obj = [obj];
+    }
+
+    var table = _.map(obj, function(o) {
+        if(Ice.isa(o, Ice)) {
+            return o.pretty()[2];
+        }
+        return o;
+    });
+
+    console.table(table);
+
+}
+
 Ice.to_javascript_object = function(obj) {
     function Date_to_datetime(obj) {
         return {
