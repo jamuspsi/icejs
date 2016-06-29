@@ -71,6 +71,21 @@ ko.extenders.trim = function clampObservable(obs, opts) {
     return obs;
 }
 
+ko.extenders.track_prefill = function(obs, opts) {
+    obs.prefilled = ko.observable(false);
+    obs.prefill = function(val) {
+        if(!obs()) {
+            obs(val);
+            obs.prefilled(true);
+        }
+    }
+    obs.subscribe(function() {
+        obs.prefilled(false);
+    }, obs, 'change');
+
+    return obs;
+};
+
 
 ko.extenders.dirty_tracker = function(obs, opts) {
     obs.saving = false;
