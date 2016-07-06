@@ -69,7 +69,23 @@ ko.extenders.trim = function clampObservable(obs, opts) {
     };
     obs.trimmed = trimmed;
     return obs;
-}
+};
+
+ko.extenders.throttle = function(obs, opts) {
+    var throttle = ko.observable(false);
+    var throttled = ko.computed(function() {
+        throttle();
+        return obs.peek();
+    });
+    var trigger = _.throttle(function() {
+        throttle(!throttle());
+    }, 1000);
+
+    obs.subscribeChanged(trigger);
+
+    obs.throttled = throttled;
+    return obs;
+};
 
 ko.extenders.track_prefill = function(obs, opts) {
     obs.prefilled = ko.observable(false);
@@ -198,3 +214,6 @@ ko.computed.fn.toString = function() {
     return "computed: " + ko.toJSON(this(), null, 2);
 };
 
+ko.observable.fn.inc = function(v) {
+    this(this() + v);
+}
