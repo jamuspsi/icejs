@@ -214,6 +214,29 @@ ko.computed.fn.toString = function() {
     return "computed: " + ko.toJSON(this(), null, 2);
 };
 
+<<<<<<< Updated upstream
 ko.observable.fn.inc = function(v) {
     this(this() + v);
 }
+=======
+ko.extenders.masked_phone = function(target_obs, opts) {
+
+    var comp = ko.computed({
+        read: function() {
+            var full = target_obs();
+            if( /^\d{10}$/.test(full)) {
+                return '(' + full.substr(0,3) + ') ' + full.substr(3, 3) + '-' + full.substr(6);
+
+            }
+            return target_obs();
+        },
+        write: function(val) {
+            target_obs(val.replace(/\D/g, ''));
+        },
+    });
+
+    target_obs.masked_phone = comp;
+    return target_obs;
+
+}
+>>>>>>> Stashed changes
