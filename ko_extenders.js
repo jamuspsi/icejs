@@ -214,11 +214,11 @@ ko.computed.fn.toString = function() {
     return "computed: " + ko.toJSON(this(), null, 2);
 };
 
-<<<<<<< Updated upstream
+
 ko.observable.fn.inc = function(v) {
     this(this() + v);
 }
-=======
+
 ko.extenders.masked_phone = function(target_obs, opts) {
 
     var comp = ko.computed({
@@ -239,4 +239,3 @@ ko.extenders.masked_phone = function(target_obs, opts) {
     return target_obs;
 
 }
->>>>>>> Stashed changes
