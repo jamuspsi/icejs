@@ -202,3 +202,7 @@ ko.computed.fn.toString = function() {
 ko.observable.fn.inc = function(v) {
     this(this() + v);
 }
+
+ko.observable.fn.toggle = function() {
+    this(!this());
+}
