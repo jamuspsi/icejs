@@ -432,3 +432,13 @@ ko.bindingHandlers.datePicker = {
         }
     }
 };
+
+
+function flash($el, color) {
+
+    $el.stop(true, true);
+    $el.effect({
+        effect: 'highlight',
+        color: color
+    });
+}
