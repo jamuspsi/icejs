@@ -87,6 +87,9 @@ ko.extenders.throttle = function(obs, opts) {
     return obs;
 };
 
+// Adds a method prefill(val) to an observable which sets the value, and also
+// sets an added observable prefilled() to true.  When the extended observable changes,
+// prefilled() becomes false.
 ko.extenders.track_prefill = function(obs, opts) {
     obs.prefilled = ko.observable(false);
     obs.prefill = function(val) {
