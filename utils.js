@@ -412,19 +412,28 @@ ko.bindingHandlers.datePicker = {
     init: function (element, valueAccessor, allBindingsAccessor, viewModel) {
         // Register change callbacks to update the model
         // if the control changes.
+        var va = valueAccessor();
+        console.log("value during register is ", va);
+
         ko.utils.registerEventHandler(element, "change", function () {
-            var value = valueAccessor();
+
             var target_date = element.valueAsDate;
-            var truncated = new Date(target_date.getFullYear(), target_date.getMonth(), target_date.getDate());
+            var truncated = null;
+            if(target_date) {
+                truncated = new Date(target_date.getFullYear(), target_date.getMonth(), target_date.getDate());
+            }
             //console.log("value in the thing is ", element.valueAsDate);
-            value(truncated);
+            va(truncated);
         });
     },
     // Update the control whenever the view model changes
     update: function (element, valueAccessor, allBindingsAccessor, viewModel) {
         var value =  valueAccessor();
-        var unwrapped = ko.utils.unwrapObservable(value());
-        //console.log("Unwrapped is now ", unwrapped);
+        var unwrapped = value();
+        //var unwrapped = ko.utils.unwrapObservable(value);
+        console.log("Unwrapped is now ", unwrapped);
+        if(window.moment && unwrapped && unwrapped._i) unwrapped = unwrapped._i;
+
         if(unwrapped === undefined || unwrapped === null) {
             element.value = '';
         } else {
@@ -432,3 +441,13 @@ ko.bindingHandlers.datePicker = {
         }
     }
 };
+
+
+function flash($el, color) {
+
+    $el.stop(true, true);
+    $el.effect({
+        effect: 'highlight',
+        color: color
+    });
+}

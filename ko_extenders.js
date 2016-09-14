@@ -242,3 +242,8 @@ ko.extenders.masked_phone = function(target_obs, opts) {
     return target_obs;
 
 }
+
+ko.observable.fn.toggle = function() {
+    this(!this());
+}
+
