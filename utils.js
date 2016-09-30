@@ -228,7 +228,10 @@ var moneyObs = function(init, nullable) {
                 fixed.notifySubscribers(obs());
                 return;
             }
-            parsed = Number(parsed.toFixed(2));
+
+            if(parsed !== null)
+                parsed = Number(parsed.toFixed(2));
+
             if(obs() === parsed) {
                 fixed.notifySubscribers(obs());
             }
