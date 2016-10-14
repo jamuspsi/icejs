@@ -51,7 +51,7 @@ if(window.ko) {
 
 if(window.moment) {
     window.moment.fn.strftime = function() {
-        return this._i.strftime.apply(this._i, arguments);
+        return this._i ? this._i.strftime.apply(this._i, arguments) : '';
     };
 }
 

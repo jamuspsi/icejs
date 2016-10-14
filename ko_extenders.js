@@ -247,3 +247,59 @@ ko.observable.fn.toggle = function() {
     this(!this());
 }
 
+
+ko.extenders.datetime = function (obs, opts) {
+    obs.html_date = ko.computed({
+        'read': function() {
+            console.trace('date read');
+            if(!obs()) return obs();
+            return obs().strftime('%Y-%m-%d');
+        },
+        'write': function(str) {
+            console.trace('date write');
+            var val = new Date(str + ' 0:0:00');
+            obs(val);
+        }
+    });
+    obs.html_time = ko.computed({
+       'read': function() {
+            console.trace('time read');
+            if(!obs()) return obs();
+            return obs().strftime('%H:%M:%S');
+        },
+        'write': function(str) {
+            console.trace('time write');
+            var val = new Date(obs().strftime('%Y-%m-%d') + ' ' + str);
+            obs(val);
+        }
+    });
+
+
+    obs.html_datetime = ko.computed({
+       'read': function() {
+            if(!obs()) return obs();
+            return obs().strftime('%Y-%m-%dT%H:%M:%S');
+        },
+        'write': function(str) {
+            var val = new Date(str.replace('T', ' '));;
+            obs(val);
+        }
+    });
+
+    return obs;
+};
+
+ko.bindingHandlers.mask_input = {
+    init: function(element, valueAccessor) {
+        // console.log("Setting up double_tap");
+        $(element).mask(valueAccessor());
+
+        ko.utils.domNodeDisposal.addDisposeCallback(element, function() {
+        });
+    },
+    dispose: function(element, valueAccessor) {
+        // console.log("Disposing doubletap");
+        interact(element).unset();
+
+    }
+}
