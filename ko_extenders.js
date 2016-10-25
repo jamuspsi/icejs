@@ -44,11 +44,12 @@ ko.extenders.clamp = function clampObservable(obs, opts) {
         obs.notifySubscribers(obs());
         clamped.notifySubscribers(clamped());
     };
+    console.log("clamping obs ", obs);
     obs.clamped = clamped;
     return obs;
 }
 
-ko.extenders.trim = function clampObservable(obs, opts) {
+ko.extenders.trim = function trimObservable(obs, opts) {
     var trimmed = ko.computed({
         read: obs,
         write: function(val) {
