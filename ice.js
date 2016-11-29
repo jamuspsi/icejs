@@ -218,8 +218,28 @@ window.Ice = Ice = Class.$extend('Ice', {
                 self[key] = val;
             }
         });
+    },
+    update_from_instance: function(instance) {
+        // Another instance of this method.
+        var self = this;
+        _.each(self.__keys__(), function(key) {
+            var val = instance[key];
+            if(val && ko.isObservable(val)) {
+                val = val();
+            }
 
-
+            if (val && val.__kls__) {
+                val = Ice.from_jsonable(val);
+            }
+            var target = self[key];
+            if(target && ko.isObservable(target)) {
+                if(ko.isWriteableObservable(target)) {
+                    target(val);
+                }
+            } else {
+                self[key] = val;
+            }
+        });
     }
 });
 Ice.INSTANCE_COUNTERS = {};
