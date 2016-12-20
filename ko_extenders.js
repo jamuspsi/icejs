@@ -244,6 +244,67 @@ ko.extenders.masked_phone = function(target_obs, opts) {
 
 }
 
+ko.extenders.money = function(target_obs, opts) {
+    nullable = opts.nullable;
+
+    function coerce(val) {
+        if(val === '' || val === null || val === "undefined") {
+            if(nullable) {
+                return null;
+            } else {
+                return 0;
+            }
+        }
+        return parseFloat(val, 10);
+
+    }
+    var obs = target_obs;
+    var fixed = ko.computed({
+        read: function() {
+            if(obs() === null || obs() === undefined) {
+                return '';
+            }
+            if(!obs().toFixed) {
+                console.log("Something's wrong with a money observable.  It has ", obs(), "in it, which isn't a number.");
+            }
+            return obs().toFixed(2);
+        },
+        write: function(val) {
+            var parsed = coerce(val);
+
+            if(isNaN(parsed)) {
+                fixed.notifySubscribers(obs());
+                return;
+            }
+
+            if(parsed !== null)
+                parsed = Number(parsed.toFixed(2));
+                if(opts.coerce_negative && parsed > 0)
+                    parsed *= -1;
+
+                if(opts.min !== undefined && parsed < opts.min)
+                    parsed = opts.min;
+                if(opts.max !== undefined && parsed > opts.max)
+                    parsed = opts.max;
+
+            if(obs() === parsed) {
+                fixed.notifySubscribers(obs());
+            }
+            obs(parsed);
+        }
+    });
+
+    obs.fixed = fixed;
+    obs(obs());
+    //result(init);
+    return obs;
+
+    /*result.fixed = ko.comput
+    return result;*/
+};
+
+
+
 ko.observable.fn.toggle = function() {
     this(!this());
 }
@@ -252,25 +313,43 @@ ko.observable.fn.toggle = function() {
 ko.extenders.datetime = function (obs, opts) {
     obs.html_date = ko.computed({
         'read': function() {
-            console.trace('date read');
+            // console.trace('date read');
             if(!obs()) return obs();
-            return obs().strftime('%Y-%m-%d');
+            var fmt = opts.date_format || '%Y-%m-%d';
+            return obs().strftime(fmt);
         },
         'write': function(str) {
-            console.trace('date write');
-            var val = new Date(str + ' 0:0:00');
+            // console.trace('date write');
+            var val;
+            if(!str) {
+                val = null
+            } else {
+                val = new Date(str + ' 0:0:00');
+                if(isNaN(val.getTime())) {
+                    val = null;
+                }
+            }
+            if(val && moment) {
+                val = new moment(val);
+            }
+
+
             obs(val);
         }
     });
     obs.html_time = ko.computed({
        'read': function() {
-            console.trace('time read');
+            // console.trace('time read');
             if(!obs()) return obs();
-            return obs().strftime('%H:%M:%S');
+            var fmt = opts.time_format || '%H:%M:%S'
+            return obs().strftime(fmt);
         },
         'write': function(str) {
-            console.trace('time write');
+            // This does not use the opt format because we're forcing it to be a parsable one.
             var val = new Date(obs().strftime('%Y-%m-%d') + ' ' + str);
+            if(moment) {
+                val = new moment(val);
+            }
             obs(val);
         }
     });
@@ -302,5 +381,22 @@ ko.bindingHandlers.mask_input = {
         // console.log("Disposing doubletap");
         interact(element).unset();
 
-    }
+    },
+    after: ['value'],
+}
+
+ko.bindingHandlers.bootstrap_datepicker = {
+    init: function(element, valueAccessor) {
+        $(element).datepicker(valueAccessor());
+
+        ko.utils.domNodeDisposal.addDisposeCallback(element, function() {
+        });
+    },
+    dispose: function(element, valueAccessor) {
+        // console.log("Disposing doubletap");
+        $(element).datepicker('destroy');
+
+    },
+    after: ['value'],
+
 }
