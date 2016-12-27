@@ -216,7 +216,7 @@ var moneyObs = function(init, nullable) {
             if(obs() === null) {
                 return '';
             }
-            if(!obs().toFixed) {
+            if(obs() === undefined || !obs().toFixed) {
                 console.log("Something's wrong with a money observable.  It has ", obs(), "in it, which isn't a number.");
             }
             return obs().toFixed(2);
