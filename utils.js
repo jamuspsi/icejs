@@ -454,3 +454,19 @@ function flash($el, color) {
         color: color
     });
 }
+
+
+if(window.moment) {
+
+    // global date formatting function
+    // When given a falsey, returns empty string rather than erroring.
+    function strftime(value, fmt) {
+        if(!value) {
+            return '';
+        }
+        if(value instanceof Date) {
+            value = moment(value)
+        }
+        return value.strftime(fmt);
+    }
+}
