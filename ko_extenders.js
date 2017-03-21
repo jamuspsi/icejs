@@ -93,10 +93,12 @@ ko.extenders.throttle = function(obs, opts) {
 // prefilled() becomes false.
 ko.extenders.track_prefill = function(obs, opts) {
     obs.prefilled = ko.observable(false);
+    obs.prefill_value = ko.observable(null);
     obs.prefill = function(val) {
         if(!obs()) {
             obs(val);
             obs.prefilled(true);
+            obs.prefill_value(val);
         }
     }
     obs.subscribe(function() {
