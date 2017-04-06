@@ -423,7 +423,9 @@ ko.bindingHandlers.datePicker = {
             var target_date = element.valueAsDate;
             var truncated = null;
             if(target_date) {
-                truncated = new Date(target_date.getFullYear(), target_date.getMonth(), target_date.getDate());
+                // Convert it to the same time but GMT.
+                truncated = new Date(target_date.getTime() + target_date.getTimezoneOffset() *60000);
+                // truncated = new Date(target_date.getFullYear(), target_date.getMonth(), target_date.getDate());
             }
             //console.log("value in the thing is ", element.valueAsDate);
             va(truncated);
