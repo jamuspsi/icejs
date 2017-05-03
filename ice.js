@@ -187,6 +187,8 @@ window.Ice = Ice = Class.$extend('Ice', {
         _.each(patchkeys, function(key) {
             var val = key in self ? self[key] : null;
             if(ko.isObservable(val)) {
+                if(val.patch_on_write && !val.is_dirty()) return;
+
                 if(val.isComponentList) {
                     val = _.map(val(), function(component) {
                         return component ? component.as_patch() : component;
@@ -194,8 +196,8 @@ window.Ice = Ice = Class.$extend('Ice', {
                 } else if(val.isComponent) {
                     var component = val();
                     val = component ? component.as_patch() : component;
-
                 } else {
+
                     val = val();
                 }
             }

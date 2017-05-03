@@ -204,7 +204,15 @@ ko.extenders.track_dirty = function(obs, dirty_bit) {
 
     });
     return obs;
-}
+};
+
+ko.extenders.patch_on_edit = function(obs) {
+    var dirty_bit = ko.observable().extend({'dirty_tracker': {}});
+    obs.extend({'track_dirty': dirty_bit});
+    obs.is_dirty = dirty_bit;
+    obs.patch_on_edit = true;
+    return obs;
+};
 
 kobe = function(opts) {
     var val = opts.val;
@@ -381,11 +389,13 @@ ko.bindingHandlers.mask_input = {
     },
     dispose: function(element, valueAccessor) {
         // console.log("Disposing doubletap");
-        interact(element).unset();
+        // interact(element).unset();
 
     },
     after: ['value'],
 }
+
+
 
 ko.bindingHandlers.bootstrap_datepicker = {
     init: function(element, valueAccessor) {
