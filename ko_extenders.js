@@ -206,11 +206,11 @@ ko.extenders.track_dirty = function(obs, dirty_bit) {
     return obs;
 };
 
-ko.extenders.patch_on_edit = function(obs) {
+ko.extenders.patch_on_write = function(obs) {
     var dirty_bit = ko.observable().extend({'dirty_tracker': {}});
     obs.extend({'track_dirty': dirty_bit});
     obs.is_dirty = dirty_bit;
-    obs.patch_on_edit = true;
+    obs.patch_on_write = true;
     return obs;
 };
 
