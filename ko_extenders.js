@@ -356,8 +356,11 @@ ko.extenders.datetime = function (obs, opts) {
         },
         'write': function(str) {
             // This does not use the opt format because we're forcing it to be a parsable one.
-            var val = new Date(obs().strftime('%Y-%m-%d') + ' ' + str);
-            if(moment) {
+            var val = null;
+            if(obs()){
+                val = new Date(obs().strftime('%Y-%m-%d') + ' ' + str);
+            }
+            if(val && moment) {
                 val = new moment(val);
             }
             obs(val);
