@@ -341,6 +341,10 @@ function formatCurrency(value, times, mo) {
     return fixed;
 };
 
+
+
+
+
 Ice.loads = function (stringed) {
     var res = JSON.parse(stringed);
 

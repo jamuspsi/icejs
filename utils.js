@@ -35,6 +35,18 @@ function ShowFullErrorStacks() {
             })();
 }
 
+// phone formatting function
+function formatPhone(value) {
+    if(value === undefined || value === null) {
+        return '';
+    }
+
+    return '(' + value.substr(0, 3) + ') ' + value.substr(3, 3) + '-' + value.substr(6);
+
+};
+
+
+
 luhn = function(cardNumber) {
     if(typeof cardNumber !== 'string' || cardNumber.length < 2)
         return false;
