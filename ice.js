@@ -36,6 +36,128 @@ if(window.ko) {
     }
 
 
+function indexedObservable(initial, attr) {
+    if(initial === undefined) initial = [];
+    if(attr === undefined) attr = 'id';
+
+    var list = ko.observableArray(initial);
+
+    var obs = ko.computed({
+        'read': function() {
+            return _.indexBy(list(), function(i) {
+                return i[attr]();
+            });
+        },
+        'write': function(val) {
+            list(_.values(val));
+        },
+    });
+
+    obs.push = _.bind(list.push, list);
+
+    obs.as_jsonable = function() {
+        return list;
+    };
+    obs.update_from_jsonable = function(jsonable) {
+        list(jsonable);
+    };
+    obs.list = list;
+    obs.isIndexedObservable = true;
+    obs.isComponentList = true;
+    return obs;
+};
+
+
+function weakObservable(opts) {
+
+    opts.attr = opts.attr || 'id';
+    opts.initial = opts.initial || null;
+
+    if(!opts.restore) {
+        return 'No restore function provided!';
+    }
+
+    var concrete = ko.observable(opts.initial);
+    var weakref = ko.observable(null);
+
+    var comp = ko.computed({
+        'read': concrete,
+        'write': function(val) {
+            if(val && val.$weakref) {
+                weakref(val);
+            } else {
+                concrete(val);
+                weakref({
+                    '$weakref': val ? val[opts.attr]() : null,
+                });
+            }
+        }
+    });
+    comp.weakref = weakref;
+    comp.restore = function() {
+        var args = Array.prototype.slice.call(arguments);
+        var id = weakref.$weakref;;
+        if(!id) {
+            concrete(null);
+            return;
+        }
+        var found = opts.restore.apply(window, [weakref.$weakref].concat(args));
+        concrete(found);
+    }
+    comp.isWeak = true;
+
+    return comp;
+}
+
+
+function weakObservableList(opts) {
+
+    opts.attr = opts.attr || 'id';
+    opts.initial = opts.initial || null;
+
+    if(!opts.restore) {
+        return 'No restore function provided!';
+    }
+
+    var concrete = indexedObservable(opts.initial, opts.attr);
+    var weakref = ko.observableArray(null);
+
+    var comp = ko.computed({
+        'read': concrete,
+        'write': function(val) {
+            if(val.$weakref) {
+                weakref(val);
+            } else {
+                concrete(val);
+                weakref({
+                    '$weakref': _.map(val, function(i) {
+                        return i[opts.attr]();
+                    })
+                });
+            }
+        }
+    });
+    comp.weakref = weakref;
+    comp.restore = function() {
+        var args = Array.prototype.slice.call(arguments);
+        var found = _.map(weakref().$weakref, function(w) {
+            if(!w) return null;
+            return opts.restore.apply(window, [w].concat(args));
+        });
+
+        concrete(_.filter(found));
+    }
+    comp.isWeak = true;
+
+    comp.push = _.bind(concrete.push, concrete);
+
+    return comp;
+}
+
+
+
+
+if(window.ko) {
     /* Stolen from https://stackoverflow.com/questions/12822954/get-previous-value-of-an-observable-in-subscribe-of-same-observable */
 
     ko.subscribable.fn.subscribeChanged = function (callback) {
@@ -53,6 +175,7 @@ if(window.ko) {
 if(window.moment) {
     window.moment.fn.strftime = function() {
         return this._i ? this._i.strftime.apply(this._i, arguments) : '';
+
     };
 }
 
@@ -146,7 +269,13 @@ window.Ice = Ice = Class.$extend('Ice', {
         _.each(self.__keys__(), function(key) {
             var val = key in self ? self[key] : null;
             if(ko.isObservable(val)) {
-                val = val();
+                if(val.isWeak) {
+                    val = val.weakref();
+                } else if(val.isIndexedObservable) {
+                    val = val.list();
+                } else {
+                    val = val();
+                }
             }
             if(Ice.isa(val, Ice)) {
                 val = val.as_jsonable();
@@ -175,6 +304,7 @@ window.Ice = Ice = Class.$extend('Ice', {
                 if(val.patch_on_write && !val.is_dirty()) return;
 
                 if(val.isComponentList) {
+                    // This automatically works with indexedObservables because we're using map(), which will hit its values.
                     val = _.map(val(), function(component) {
                         return component ? component.as_patch() : component;
                     });
@@ -200,11 +330,19 @@ window.Ice = Ice = Class.$extend('Ice', {
             }
             var target = self[key];
             if(target && ko.isObservable(target)) {
-                target(val);
+                if(target.isWeak) {
+                    target.weakref(val);
+                } else if(target.isIndexedObservable) {
+                    target.list(val);
+                } else {
+                    target(val);
+                }
             } else {
                 self[key] = val;
             }
         });
+
+
     },
     update_from_instance: function(instance) {
         // Another instance of this method.
@@ -227,7 +365,7 @@ window.Ice = Ice = Class.$extend('Ice', {
                 self[key] = val;
             }
         });
-    }
+    },
 });
 Ice.INSTANCE_COUNTERS = {};
 Ice.isIce = function(obj) {
