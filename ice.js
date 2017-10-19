@@ -215,8 +215,16 @@ window.Ice = Ice = Class.$extend('Ice', {
 
     },
     __postextend__: function(kls) {
-        if(window.Ice && window.Ice.Registry) {
+    	kls.$base = kls.$superclass;
+        /* if(window.Ice && window.Ice.Registry) {
             Ice.Registry.register(kls);
+        } */
+        var base = kls;
+        while(base) {
+        	if(base.Registry) {
+        		base.Registry.register(kls);
+        	}
+        	base = base.$base;
         }
 
     },
