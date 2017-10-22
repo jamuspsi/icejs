@@ -313,6 +313,10 @@ ko.observable.fn.changed = function(fn) {
    this.subscribeChanged(fn);
    return this;
 }
+ko.computed.fn.changed = function(fn) {
+   this.subscribeChanged(fn);
+   return this;
+}
 
 ko.extenders.datetime = function (obs, opts) {
     obs.html_date = ko.computed({
