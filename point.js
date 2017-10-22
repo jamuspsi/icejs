@@ -37,7 +37,23 @@ Point = Ice.$extend('Point', {
 	},
 	times: function(mult) {
 		return new Point(this.x * mult, this.y * mult);
-	}
+	},
+    bezier: function(t, ...inters) {
+        var self = this;
+        var pts = [self].concat(inters);
+        console.log("getting bezier ", pts, t);
+        while(pts.length > 1) {
+            var reduced = [];
+            for(var x = 0; x< pts.length - 1; x++) {
+                var pta = pts[x];
+                var ptb = pts[x+1];
+                var pt = Point(pta.x + (ptb.x - pta.x) * t, pta.y + (ptb.y - pta.y) * t);
+                reduced.push(pt);
+            }
+            pts = reduced;
+        }
+        return pts[0];
+    }
 });
 
 Point.fromSize = function(element) {
