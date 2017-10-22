@@ -26,8 +26,12 @@ Point = Ice.$extend('Point', {
 	negative: function() {
 		return new Point(-1 * this.x, -1 * this.y);
 	},
-	translate: function(degrees, dist) {
-		return this.plus(dist * Trig.cosd(degrees), dist * -1 * Trig.sind(degrees));
+	plus_polar: function(th, r) {
+        if(r === undefined) {
+            r = th.y;
+            th = th.x;
+        }
+		return this.plus(r * Trig.cos(th), r * -1 * Trig.sind(th));
 	},
 	lt: function() {
 		return {left: this.x, top: this.y};
@@ -41,7 +45,7 @@ Point = Ice.$extend('Point', {
     bezier: function(t, ...inters) {
         var self = this;
         var pts = [self].concat(inters);
-        console.log("getting bezier ", pts, t);
+        // console.log("getting bezier ", pts, t);
         while(pts.length > 1) {
             var reduced = [];
             for(var x = 0; x< pts.length - 1; x++) {
@@ -53,7 +57,10 @@ Point = Ice.$extend('Point', {
             pts = reduced;
         }
         return pts[0];
-    }
+    },
+    array: function() {
+        return [this.x, this.y];
+    },
 });
 
 Point.fromSize = function(element) {
