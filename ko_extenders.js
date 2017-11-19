@@ -220,8 +220,12 @@ ko.computed.fn.toString = function() {
 
 
 ko.observable.fn.inc = function(v) {
+    if(v === undefined) v = 1;
+    var pre = this();
     this(this() + v);
+    return pre;
 }
+
 
 ko.extenders.masked_phone = function(target_obs, opts) {
 
