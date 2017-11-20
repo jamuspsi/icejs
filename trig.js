@@ -11,6 +11,9 @@ _.each(['sin', 'cos', 'tan', 'sec', 'csc', 'cot', 'asin', 'acos', 'atan'], funct
 Trig.pi = Trig.Pi = Trig.PI = Math.PI;
 Trig.twopi = 2 * Trig.pi;
 
+function pis(n) {
+    return Math.PI * n;
+}
 
 Trig.measure_magnitude = function(x, y) {
     return Math.sqrt(x*x + y*y);
