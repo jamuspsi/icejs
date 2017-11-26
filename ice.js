@@ -518,6 +518,11 @@ Ice.dumps = function(obj) {
     return JSON.stringify(copyobj);
 }
 
+Ice.dumpobj = function(obj) {
+    var copyobj = Ice.to_javascript_object(obj);
+    return copyobj;
+}
+
 Ice.table = function(obj) {
     var keys;
     if(!Array.isArray(obj)) {
