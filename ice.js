@@ -82,6 +82,7 @@ function weakObservable(opts) {
         'read': concrete,
         'write': function(val) {
             if(val && val.$weakref) {
+                console.log("Storing weakref ", val);
                 weakref(val);
             } else {
                 concrete(val);
@@ -94,12 +95,12 @@ function weakObservable(opts) {
     comp.weakref = weakref;
     comp.restore = function() {
         var args = Array.prototype.slice.call(arguments);
-        var id = weakref.$weakref;;
+        var id = weakref() ? weakref().$weakref : null;
         if(!id) {
             concrete(null);
             return;
         }
-        var found = opts.restore.apply(window, [weakref.$weakref].concat(args));
+        var found = opts.restore.apply(window, [id].concat(args));
         concrete(found);
     }
     comp.isWeak = true;
