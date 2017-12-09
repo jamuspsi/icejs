@@ -384,6 +384,15 @@ Ice.isa = function(o, kls) {
     return Ice.isIce(o) && o.isa(kls);
 };
 
+Ice.issubclass = function(kls, base) {
+    while(kls) {
+        if(kls === base) return true;
+        kls = kls.$base;
+    }
+    return false;
+
+}
+
 if(window.ko) {
     Ice.kocomputed = kocomputed_wrapper;
 
