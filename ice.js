@@ -119,7 +119,15 @@ function weakObservableList(opts) {
     }
 
     var concrete = indexedObservable(opts.initial, opts.attr);
-    var weakref = ko.observableArray(null);
+    var weakref = ko.observable(null);
+
+    function sync_weakref() {
+        weakref({
+            '$weakref': _.map(concrete(), function(i) {
+                return i[opts.attr]();
+            })
+        });
+    }
 
     var comp = ko.computed({
         'read': concrete,
@@ -128,18 +136,17 @@ function weakObservableList(opts) {
                 weakref(val);
             } else {
                 concrete(val);
-                weakref({
-                    '$weakref': _.map(val, function(i) {
-                        return i[opts.attr]();
-                    })
-                });
+                sync_weakref();
             }
         }
     });
     comp.weakref = weakref;
     comp.restore = function() {
         var args = Array.prototype.slice.call(arguments);
-        var found = _.map(weakref().$weakref, function(w) {
+        var weakrefs = [];
+        if(weakref()) weakrefs = weakref().$weakref;
+
+        var found = _.map(weakrefs, function(w) {
             if(!w) return null;
             return opts.restore.apply(window, [w].concat(args));
         });
@@ -148,7 +155,13 @@ function weakObservableList(opts) {
     }
     comp.isWeak = true;
 
-    comp.push = _.bind(concrete.push, concrete);
+    comp.push = function(o) {
+        concrete.push(o);
+        sync_weakref();
+        // weakref.push(o[opts.attr]());
+    };
+
+    comp.list = concrete.list;
 
     return comp;
 }

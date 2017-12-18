@@ -210,12 +210,24 @@ kobe = function(opts) {
 
 }
 
+
+function __shallow_observable_preview(label, obj) {
+    if(typeof(obj) === 'object') {
+        if(obj.$class) return label + ': ' + obj.$class.$name;
+    }
+    return label + ': ' + obj.toString();
+
+}
+
 ko.observable.fn.toString = function() {
-        return "observable: " + ko.toJSON(this(), null, 2);
-    };
+
+    return __shallow_observable_preview('observable', this());
+};
+
 
 ko.computed.fn.toString = function() {
-    return "computed: " + ko.toJSON(this(), null, 2);
+    return __shallow_observable_preview('computed', this());
+
 };
 
 
