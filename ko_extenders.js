@@ -110,7 +110,7 @@ ko.extenders.track_prefill = function(obs, opts) {
 
 
 ko.extenders.dirty_tracker = function(obs, opts) {
-    obs.saving = false;
+    obs.saving = ko.observable(false);
     obs.changed_during_save = false;
     obs.chained = [];
     obs.chained_to = [];
@@ -118,12 +118,12 @@ ko.extenders.dirty_tracker = function(obs, opts) {
     obs.soil_callbacks = [];
 
     obs.save_start = function () {
-        obs.saving = true;
+        obs.saving(true);
         obs.changed_during_save = false;
     };
 
     obs.save_end = function() {
-        obs.saving = false;
+        obs.saving(false);
         if(!obs.changed_during_save) {
             obs.clean();
         }
@@ -142,7 +142,7 @@ ko.extenders.dirty_tracker = function(obs, opts) {
         obs.old_value = oldValue;
         obs.new_value = newValue;
 
-        if(obs.saving) {
+        if(obs.saving()) {
             obs.changed_during_save = true;
         }
 
