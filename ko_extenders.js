@@ -321,44 +321,54 @@ ko.observable.fn.toggle = function() {
 
 
 ko.extenders.datetime = function (obs, opts) {
+    var date_str = ko.observable(null);
+    var time_str = ko.observable(null);
     obs.html_date = ko.computed({
         'read': function() {
+            return date_str();
             // console.trace('date read');
-            if(!obs()) return obs();
+            if(!obs()) return date_str();
             var fmt = opts.date_format || '%Y-%m-%d';
             return obs().strftime(fmt);
         },
         'write': function(str) {
             // console.trace('date write');
             var val;
+            date_str(str);
             if(!str) {
                 val = null
             } else {
-                val = new Date(str + ' 0:0:00');
-                if(isNaN(val.getTime())) {
+                if(!obs.html_time()){
                     val = null;
+                } else {
+                    val = new Date(str + ' ' + obs.html_time());
                 }
             }
             if(val && moment) {
                 val = new moment(val);
             }
-
-
             obs(val);
         }
     });
     obs.html_time = ko.computed({
        'read': function() {
-            // console.trace('time read');
-            if(!obs()) return obs();
-            var fmt = opts.time_format || '%H:%M:%S'
-            return obs().strftime(fmt);
+            return time_str();
+            if(!obs()) return time_str();
+            var fmt = opts.time_format || '%l:%M %P'
+            return obs().strftime(fmt).toUpperCase();
         },
         'write': function(str) {
             // This does not use the opt format because we're forcing it to be a parsable one.
             var val = null;
-            if(obs()){
-                val = new Date(obs().strftime('%Y-%m-%d') + ' ' + str);
+            time_str(str);
+            if(!str) {
+                val = null
+            } else {
+                if(!obs.html_date()){
+                        val = null;
+                    } else {
+                        val = new Date(obs.html_date() + ' ' + str);
+                    }
             }
             if(val && moment) {
                 val = new moment(val);
@@ -379,6 +389,15 @@ ko.extenders.datetime = function (obs, opts) {
         }
     });
 
+    obs.subscribeChanged(function(date_time){
+        if(!date_time || isNaN( date_time._i.getTime() ) ){
+            date_str(null);
+            time_str(null);
+        } else {
+            date_str(date_time.strftime('%Y-%m-%d'));
+            time_str(date_time.strftime('%l:%M %P').toUpperCase());
+        }
+    });
     return obs;
 };
 
