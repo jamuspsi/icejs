@@ -322,7 +322,12 @@ ko.observable.fn.toggle = function() {
 
 ko.extenders.datetime = function (obs, opts) {
     var date_str = ko.observable(null);
-    var time_str = ko.observable(null);
+    var time_str = ko.observable('0:00 AM');
+
+    opts = _.extend({}, opts);
+    opts.date_format = opts.date_format || '%Y-%m-%d';
+    opts.time_format = opts.time_format || '%H:%M';
+
     obs.html_date = ko.computed({
         'read': function() {
             return date_str();
@@ -354,7 +359,7 @@ ko.extenders.datetime = function (obs, opts) {
        'read': function() {
             return time_str();
             if(!obs()) return time_str();
-            var fmt = opts.time_format || '%l:%M %P'
+            var fmt = opts.time_format || '%H:%M'
             return obs().strftime(fmt).toUpperCase();
         },
         'write': function(str) {
@@ -373,6 +378,7 @@ ko.extenders.datetime = function (obs, opts) {
             if(val && moment) {
                 val = new moment(val);
             }
+            console.log("writing value ", val);
             obs(val);
         }
     });
@@ -394,8 +400,8 @@ ko.extenders.datetime = function (obs, opts) {
             date_str(null);
             time_str(null);
         } else {
-            date_str(date_time.strftime('%Y-%m-%d'));
-            time_str(date_time.strftime('%l:%M %P').toUpperCase());
+            date_str(date_time.strftime(opts.date_format));
+            time_str(date_time.strftime(opts.time_format).toUpperCase());
         }
     });
     return obs;
