@@ -399,7 +399,7 @@ Ice.table = function(obj) {
 Ice.to_javascript_object = function(obj) {
     function Date_to_datetime(obj) {
         return {
-             '__type__': 'datetime',
+             '__kls__': 'datetime',
              'year': obj.getFullYear(),
              'month': obj.getMonth() + 1,
              'day': obj.getDate(),
