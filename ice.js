@@ -61,7 +61,6 @@ window.Ice = Ice = Class.$extend('Ice', {
     __init__: function() {
         var self = this;
 
-        this.evChanged = IceEvent(this);
         if(Ice.INSTANCE_COUNTERS[this.$class.$name] === undefined) {
             Ice.INSTANCE_COUNTERS[this.$class.$name] = 0;
         }
@@ -137,22 +136,7 @@ window.Ice = Ice = Class.$extend('Ice', {
     pretty: function() {
         return [this.$class.$classname, this.ICEID, this.attrs()];
     },
-    unsub: function(unsub) {
-        _.each(this, function(v,i,l) {
-            if(!v) {
-                return;
-            }
-            if(v.constructor === IceObservable) {
-                v.unsub(unsub);
-            } else if(v.constructor === IceEvent) {
-                v.unsub(unsub);
-            }
-            /* This becomes recursive, let's not.
-            if(Ice.isIce(v)) {
-                v.unsub(this);
-            }*/
-        });
-    },
+
     python_kls: function() {
         return this.$class.$name;
     },
