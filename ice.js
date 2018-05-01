@@ -372,7 +372,8 @@ Ice.to_javascript_object = function(obj) {
             return searchobj._d;
 
         } else {
-            copy = searchobj.constructor() || {};
+
+            copy = searchobj.constructor ? searchobj.constructor() || {} : {};
         }
         // console.log("Deepcopying, starting with ", copy, copy.cid);
         window.debug = copy;
