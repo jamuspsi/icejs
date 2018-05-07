@@ -75,7 +75,7 @@ IceModel = Ice.$extend('IceModel', {
 
     },
 
-    delete: function() {
+    'delete': function() {
         var self = this;
 
         var def = self.$class.delete_api.post({
@@ -91,5 +91,5 @@ IceModel = Ice.$extend('IceModel', {
         var self = this;
 
         return self.errors().length || _.keys(self.field_errors()).length;
-    },
+    }
 });

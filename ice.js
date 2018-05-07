@@ -287,7 +287,11 @@ window.Ice = Ice = Class.$extend('Ice', {
     },
     as_jsonable: function() {
         var self = this;
-        var jsonable = {'__kls__': self.python_kls()};
+
+        var __kls__ = Ice.Registry.override_kls_to_name[self.$class.$name];
+        if(!__kls__) __kls__ = self.$class.$name;
+
+        var jsonable = {'__kls__': __kls__};
         _.each(self.__keys__(), function(key) {
             var val = key in self ? self[key] : null;
             if(ko.isObservable(val)) {
@@ -391,6 +395,7 @@ window.Ice = Ice = Class.$extend('Ice', {
 });
 Ice.INSTANCE_COUNTERS = {};
 Ice.isIce = function(obj) {
+    if(!obj) return false;
     return obj && obj.constructor === Class && obj.isa && obj.isa(Ice);
 };
 Ice.isa = function(o, kls) {
@@ -415,6 +420,9 @@ ClassRegistry = Ice.$extend('ClassRegistry', {
     __init__: function(kls) {
         var self = this;
 
+        self.override_kls_to_name = {};
+        self.override_name_to_kls = {};
+
         self.__typemap__ = {};
         if(kls) {
             self.register(kls);
@@ -429,8 +437,29 @@ ClassRegistry = Ice.$extend('ClassRegistry', {
 
         self.__typemap__[kls.$name] = kls;
     },
+    override: function(name, kls) {
+        var self = this;
+
+        // Serves two purposes:
+        // 1. if a jsonable comes in with __kls__==name, then
+        //    use this kls to instantiate it.
+        // 2. When serializing an object of kls, store this in __kls__.
+
+        // If there's a many-to-many situation, the most recent name overridden to a class
+        // will be used for purpose 2.  Ex:
+        // override(Foo, 'Bar')
+        // override(Foo, 'Foo')
+        // Foo will be serialized as Foo, both Foos and Bars will deserialize to Foo.
+
+        self.override_name_to_kls[name] = kls;
+        self.override_kls_to_name[kls.name] = name;
+
+    },
     get_type: function(klsname) {
         var self = this;
+
+        var override = self.override_name_to_kls[klsname];
+        if(override) return override;
 
         return self.__typemap__[klsname];
     },
@@ -471,6 +500,7 @@ Ice.Registry = ClassRegistry(Ice);
 Ice.loads = function (stringed) {
     var res = JSON.parse(stringed);
 
+
     var wrapper = {
         'wrapped': res
     };
@@ -493,6 +523,7 @@ Ice.loads = function (stringed) {
     }
     //console.log('Deepsearching wrapper ', wrapper);
     deepsearch(wrapper);
+
     return wrapper.wrapped;
     //return res;
 };
