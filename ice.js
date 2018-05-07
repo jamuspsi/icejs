@@ -36,140 +36,140 @@ if(window.ko) {
     }
 
 
-function indexedObservable(initial, attr) {
-    if(initial === undefined) initial = [];
-    if(attr === undefined) attr = 'id';
+    function indexedObservable(initial, attr) {
+        if(initial === undefined) initial = [];
+        if(attr === undefined) attr = 'id';
 
-    var list = ko.observableArray(initial);
+        var list = ko.observableArray(initial);
 
-    var obs = ko.computed({
-        'read': function() {
-            return _.indexBy(list(), function(i) {
-                return i[attr]();
-            });
-        },
-        'write': function(val) {
-            list(_.values(val));
-        },
-    });
-
-    obs.push = _.bind(list.push, list);
-
-    obs.as_jsonable = function() {
-        return list;
-    };
-    obs.update_from_jsonable = function(jsonable) {
-        list(jsonable);
-    };
-    obs.list = list;
-    obs.isIndexedObservable = true;
-    obs.isComponentList = true;
-    return obs;
-};
-
-
-function weakObservable(opts) {
-
-    opts.attr = opts.attr || 'id';
-    opts.initial = opts.initial || null;
-
-    if(!opts.restore) {
-        return 'No restore function provided!';
-    }
-
-    var concrete = ko.observable(opts.initial);
-    var weakref = ko.observable(null);
-
-    var comp = ko.computed({
-        'read': concrete,
-        'write': function(val) {
-            if(val && val.$weakref) {
-                console.log("Storing weakref ", val);
-                weakref(val);
-            } else {
-                concrete(val);
-                weakref({
-                    '$weakref': val ? val[opts.attr]() : null,
+        var obs = ko.computed({
+            'read': function() {
+                return _.indexBy(list(), function(i) {
+                    return i[attr]();
                 });
-            }
-        }
-    });
-    comp.weakref = weakref;
-    comp.restore = function() {
-        var args = Array.prototype.slice.call(arguments);
-        var id = weakref() ? weakref().$weakref : null;
-        if(!id) {
-            concrete(null);
-            return;
-        }
-        var found = opts.restore.apply(window, [id].concat(args));
-        concrete(found);
-    }
-    comp.isWeak = true;
-
-    return comp;
-}
-
-
-function weakObservableList(opts) {
-
-    opts.attr = opts.attr || 'id';
-    opts.initial = opts.initial || null;
-
-    if(!opts.restore) {
-        return 'No restore function provided!';
-    }
-
-    var concrete = indexedObservable(opts.initial, opts.attr);
-    var weakref = ko.observable(null);
-
-    function sync_weakref() {
-        weakref({
-            '$weakref': _.map(concrete(), function(i) {
-                return i[opts.attr]();
-            })
-        });
-    }
-
-    var comp = ko.computed({
-        'read': concrete,
-        'write': function(val) {
-            if(val.$weakref) {
-                weakref(val);
-            } else {
-                concrete(val);
-                sync_weakref();
-            }
-        }
-    });
-    comp.weakref = weakref;
-    comp.restore = function() {
-        var args = Array.prototype.slice.call(arguments);
-        var weakrefs = [];
-        if(weakref()) weakrefs = weakref().$weakref;
-
-        var found = _.map(weakrefs, function(w) {
-            if(!w) return null;
-            return opts.restore.apply(window, [w].concat(args));
+            },
+            'write': function(val) {
+                list(_.values(val));
+            },
         });
 
-        concrete(_.filter(found));
-    }
-    comp.isWeak = true;
+        obs.push = _.bind(list.push, list);
 
-    comp.push = function(o) {
-        concrete.push(o);
-        sync_weakref();
-        // weakref.push(o[opts.attr]());
+        obs.as_jsonable = function() {
+            return list;
+        };
+        obs.update_from_jsonable = function(jsonable) {
+            list(jsonable);
+        };
+        obs.list = list;
+        obs.isIndexedObservable = true;
+        obs.isComponentList = true;
+        return obs;
     };
 
-    comp.list = concrete.list;
 
-    return comp;
+    function weakObservable(opts) {
+
+        opts.attr = opts.attr || 'id';
+        opts.initial = opts.initial || null;
+
+        if(!opts.restore) {
+            return 'No restore function provided!';
+        }
+
+        var concrete = ko.observable(opts.initial);
+        var weakref = ko.observable(null);
+
+        var comp = ko.computed({
+            'read': concrete,
+            'write': function(val) {
+                if(val && val.$weakref) {
+                    console.log("Storing weakref ", val);
+                    weakref(val);
+                } else {
+                    concrete(val);
+                    weakref({
+                        '$weakref': val ? val[opts.attr]() : null,
+                    });
+                }
+            }
+        });
+        comp.weakref = weakref;
+        comp.restore = function() {
+            var args = Array.prototype.slice.call(arguments);
+            var id = weakref() ? weakref().$weakref : null;
+            if(!id) {
+                concrete(null);
+                return;
+            }
+            var found = opts.restore.apply(window, [id].concat(args));
+            concrete(found);
+        }
+        comp.isWeak = true;
+
+        return comp;
+    }
+
+
+    function weakObservableList(opts) {
+
+        opts.attr = opts.attr || 'id';
+        opts.initial = opts.initial || null;
+
+        if(!opts.restore) {
+            return 'No restore function provided!';
+        }
+
+        var concrete = indexedObservable(opts.initial, opts.attr);
+        var weakref = ko.observable(null);
+
+        function sync_weakref() {
+            weakref({
+                '$weakref': _.map(concrete(), function(i) {
+                    return i[opts.attr]();
+                })
+            });
+        }
+
+        var comp = ko.computed({
+            'read': concrete,
+            'write': function(val) {
+                if(val.$weakref) {
+                    weakref(val);
+                } else {
+                    concrete(val);
+                    sync_weakref();
+                }
+            }
+        });
+        comp.weakref = weakref;
+        comp.restore = function() {
+            var args = Array.prototype.slice.call(arguments);
+            var weakrefs = [];
+            if(weakref()) weakrefs = weakref().$weakref;
+
+            var found = _.map(weakrefs, function(w) {
+                if(!w) return null;
+                return opts.restore.apply(window, [w].concat(args));
+            });
+
+            concrete(_.filter(found));
+        }
+        comp.isWeak = true;
+
+        comp.push = function(o) {
+            concrete.push(o);
+            sync_weakref();
+            // weakref.push(o[opts.attr]());
+        };
+
+        comp.list = concrete.list;
+
+        return comp;
+    }
+
+
 }
-
-
-
 
 if(window.ko) {
     /* Stolen from https://stackoverflow.com/questions/12822954/get-previous-value-of-an-observable-in-subscribe-of-same-observable */
@@ -589,4 +589,4 @@ Ice.to_javascript_object = function(obj) {
         copyobj = obj;
     }
     return copyobj;
-}
+};
