@@ -266,9 +266,7 @@ window.Ice = Ice = Class.$extend('Ice', {
     attrs: function() {
         var attrs = {};
         _.each(this, function(v,i,l) {
-            if(v && v.constructor === IceObservable){
-                attrs[i] = v();
-            } else if(v && ko && ko.isObservable(v)) {
+            if(v && ko && ko.isObservable(v)) {
 
                 attrs[i] = v();
             } else if(typeof(v) !== 'function') {
