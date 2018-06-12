@@ -194,6 +194,8 @@ if(window.moment) {
 }
 
 
+
+
 window.Ice = Ice = Class.$extend('Ice', {
     __init__: function() {
         var self = this;
@@ -409,6 +411,15 @@ Ice.issubclass = function(kls, base) {
 
 }
 
+
+Ice.datetime_to_Date = function(obj) {
+    var val = new Date(obj.year, obj.month-1, obj.day, obj.hour, obj.minute, obj.second, obj.microsecond/1000);
+    if(window.moment) {
+        return moment(val);
+    }
+    return val;
+}
+
 if(window.ko) {
     Ice.kocomputed = kocomputed_wrapper;
 
@@ -472,7 +483,7 @@ ClassRegistry = Ice.$extend('ClassRegistry', {
             return Number(jsonable.str);
         }
         if(jsonable.__kls__ === 'datetime') {
-            return datetime_to_Date(jsonable);
+            return Ice.datetime_to_Date(jsonable);
         }
 
         var kls = self.get_type(jsonable.__kls__);
@@ -508,7 +519,7 @@ Ice.loads = function (stringed) {
                 continue;
             }
             if(obj[i] && (obj[i].__type__ || obj[i].__kls__) == 'datetime') {
-                obj[i] = datetime_to_Date(obj[i]);
+                obj[i] = Ice.datetime_to_Date(obj[i]);
             } else if(obj[i] && (obj[i].__type__ || obj[i].__kls__) == 'Decimal') {
                 obj[i] = Number(obj[i].str);
             } else if(obj[i] && obj[i].__kls__) {
