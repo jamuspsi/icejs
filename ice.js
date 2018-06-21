@@ -279,7 +279,7 @@ window.Ice = Ice = Class.$extend('Ice', {
 
     },
     pretty: function() {
-        return [this.$class.$classname, this.ICEID, this.attrs()];
+        return this.attrs();
     },
 
     python_kls: function() {
