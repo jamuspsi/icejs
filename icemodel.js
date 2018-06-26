@@ -97,3 +97,12 @@ IceModel = Ice.$extend('IceModel', {
         return self.errors().length || _.keys(self.field_errors()).length;
     }
 });
+
+
+NotImplementedException = function(method) {
+    this.value = method;
+    this.message = 'Unimplemented method';
+    this.toString = function() {
+        return this.message + ' ' + this.method;
+    }
+};
