@@ -8,12 +8,14 @@ IceModel = Ice.$extend('IceModel', {
         self.errors = ko.observableArray([]);
         self.field_errors = ko.observable({});
 
+        self.dirty = ko.observable(false).extend({'dirty_tracker': true});
+
         self.vm = null;
     },
     save: function() {
         var self = this;
 
-        if(!self.can_save()) return false;
+        if(!self.can_save()) return null;
 
 
 
@@ -21,7 +23,7 @@ IceModel = Ice.$extend('IceModel', {
 
         var def = self.$class.save_api.post({
             'patch': self.as_patch(),
-        }).fail(function(errors, field_errors, data) {
+        }).fail(function(data, errors, field_errors) {
             self.errors(errors);
             self.field_errors(field_errors);
             if(data && data.jsonable) {
@@ -34,7 +36,9 @@ IceModel = Ice.$extend('IceModel', {
             self.dirty.save_end();
             self.clear_errors();
             console.log('save successful, jsonable to update from is ', data.jsonable);
-            self.update_from_jsonable(data.jsonable);
+            if(data && data.jsonable) {
+                self.update_from_jsonable(data.jsonable);
+            }
             if(!self.dirty.changed_during_save) self.dirty.clean();
 
 
