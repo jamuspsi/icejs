@@ -188,7 +188,7 @@ if(window.ko) {
 
 if(window.moment) {
     window.moment.fn.strftime = function() {
-        return this._i ? this._i.strftime.apply(this._i, arguments) : '';
+        return this._d ? this._d.strftime.apply(this._d, arguments) : '';
 
     };
 }
