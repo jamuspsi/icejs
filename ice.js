@@ -186,10 +186,13 @@ if(window.ko) {
     };
 }
 
-if(window.moment) {
+if(window.moment && !window.moment.fn.strftime) {
     window.moment.fn.strftime = function() {
-        return this._d ? this._d.strftime.apply(this._d, arguments) : '';
-
+        // console.log('using icejs strftime')
+        
+        var iord = this._i || this._d;
+        
+        return iord ? iord.strftime.apply(iord, arguments) : null;
     };
 }
 
