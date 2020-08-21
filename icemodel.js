@@ -1,16 +1,23 @@
 
+
 IceModel = Ice.$extend('IceModel', {
     __init__: function() {
         var self = this;
         self.$super();
 
-
+        self.pk = ko.observable(null);
         self.errors = ko.observableArray([]);
         self.field_errors = ko.observable({});
 
         self.dirty = ko.observable(false).extend({'dirty_tracker': true});
 
         self.vm = null;
+    },
+    __keys__: function() {
+        return this.$super().concat(['pk']);
+    },
+    __patchkeys__: function() {
+        return this.$super().concat(['pk']);
     },
     save: function() {
         var self = this;
