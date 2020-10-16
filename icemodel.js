@@ -17,7 +17,7 @@ IceModel = Ice.$extend('IceModel', {
         return this.$super().concat(['pk']);
     },
     __patchkeys__: function() {
-        return this.$super().concat(['pk']);
+        return ['pk'];
     },
     save: function() {
         var self = this;
