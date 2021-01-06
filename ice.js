@@ -234,16 +234,16 @@ window.Ice = Ice = Class.$extend('Ice', {
 
     },
     __postextend__: function(kls) {
-    	kls.$base = kls.$superclass;
+        kls.$base = kls.$superclass;
         /* if(window.Ice && window.Ice.Registry) {
             Ice.Registry.register(kls);
         } */
         var base = kls;
         while(base) {
-        	if(base.Registry) {
-        		base.Registry.register(kls);
-        	}
-        	base = base.$base;
+            if(base.Registry) {
+                base.Registry.register(kls);
+            }
+            base = base.$base;
         }
 
     },
@@ -258,14 +258,14 @@ window.Ice = Ice = Class.$extend('Ice', {
     },
 
     isa: function(kls) {
-      var walk = this.$class;
-      while(walk !== undefined) {
+    var walk = this.$class;
+    while(walk !== undefined) {
         if(kls === walk){
-          return true;
+        return true;
         }
         walk = walk.$superclass;
-      }
-      return false;
+    }
+    return false;
 
     },
     attrs: function() {
@@ -570,14 +570,14 @@ Ice.table = function(obj) {
 Ice.to_javascript_object = function(obj) {
     function Date_to_datetime(obj) {
         return {
-             '__kls__': 'datetime',
-             'year': obj.getFullYear(),
-             'month': obj.getMonth() + 1,
-             'day': obj.getDate(),
-             'hour': obj.getHours(),
-             'minute': obj.getMinutes(),
-             'second': obj.getSeconds(),
-             'microsecond': obj.getMilliseconds() * 1000
+            '__kls__': 'datetime',
+            'year': obj.getFullYear(),
+            'month': obj.getMonth() + 1,
+            'day': obj.getDate(),
+            'hour': obj.getHours(),
+            'minute': obj.getMinutes(),
+            'second': obj.getSeconds(),
+            'microsecond': obj.getMilliseconds() * 1000
         };
     }
 
