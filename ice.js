@@ -1,7 +1,15 @@
+var define = (this.nodeish||require('@nodeish'))(this.window||arguments);
+define('icejs', function({exports, require, rfr, module}) {
 
-if(window.ko) {
+Class = rfr('Class', 'classy/classy.js', 'Class');
+var ko = rfr('ko', 'koplus/knockout-3.4.0.koplus.js', 'ko');
+var moment = require('moment');
+var _ = require('lodash', '', '_');
+
+
+if(ko) {
     // Not exactly deep voodoo, but voodoo.
-    kocomputed_wrapper = function(f) {
+    var kocomputed_wrapper = exports.kocomputed_wrapper = function(f) {
         // Self doesn't exist at this time.
         f.constructor = kocomputed_wrapper;
         return f;
@@ -13,7 +21,7 @@ if(window.ko) {
         return obj;
     };
 
-    function componentObservable(val) {
+    var componentObservable = exports.componentObservable = function(val) {
         var obs;
         if(ko.isObservable(val)) {
             obs = val;
@@ -24,7 +32,7 @@ if(window.ko) {
         return obs;
     }
 
-    function componentListObservable(val) {
+    var componentListObservable = exports.componentListObservable = function(val) {
         var obs;
         if(ko.isObservable(val)) {
             obs = val;
@@ -36,7 +44,7 @@ if(window.ko) {
     }
 
 
-    function indexedObservable(initial, attr) {
+    var indexedObservable = exports.indexedObservable = function(initial, attr) {
         if(initial === undefined) initial = [];
         if(attr === undefined) attr = 'id';
 
@@ -68,7 +76,7 @@ if(window.ko) {
     };
 
 
-    function weakObservable(opts) {
+    var weakObservable = exports.weakObservable = function(opts) {
 
         opts.attr = opts.attr || 'id';
         opts.initial = opts.initial || null;
@@ -102,7 +110,7 @@ if(window.ko) {
                 concrete(null);
                 return;
             }
-            var found = opts.restore.apply(window, [id].concat(args));
+            var found = opts.restore.apply(root, [id].concat(args));
             concrete(found);
         }
         comp.isWeak = true;
@@ -111,7 +119,7 @@ if(window.ko) {
     }
 
 
-    function weakObservableList(opts) {
+    var weakObservableList = exports.weakObservableList = function(opts) {
 
         opts.attr = opts.attr || 'id';
         opts.initial = opts.initial || null;
@@ -150,7 +158,7 @@ if(window.ko) {
 
             var found = _.map(weakrefs, function(w) {
                 if(!w) return null;
-                return opts.restore.apply(window, [w].concat(args));
+                return opts.restore.apply(root, [w].concat(args));
             });
 
             concrete(_.filter(found));
@@ -171,7 +179,7 @@ if(window.ko) {
 
 }
 
-if(window.ko) {
+if(ko) {
     /* Stolen from https://stackoverflow.com/questions/12822954/get-previous-value-of-an-observable-in-subscribe-of-same-observable */
 
     ko.subscribable.fn.subscribeChanged = function (callback) {
@@ -186,20 +194,7 @@ if(window.ko) {
     };
 }
 
-if(window.moment && !window.moment.fn.strftime) {
-    window.moment.fn.strftime = function() {
-        // console.log('using icejs strftime')
-        
-        var iord = this._i || this._d;
-        
-        return iord ? iord.strftime.apply(iord, arguments) : null;
-    };
-}
-
-
-
-
-window.Ice = Ice = Class.$extend('Ice', {
+exports.Ice = Ice = Class.$extend('Ice', {
     __init__: function() {
         var self = this;
 
@@ -423,9 +418,8 @@ Ice.datetime_to_Date = function(obj) {
     return val;
 }
 
-if(window.ko) {
+if(ko) {
     Ice.kocomputed = kocomputed_wrapper;
-
 }
 
 ClassRegistry = Ice.$extend('ClassRegistry', {
@@ -585,7 +579,7 @@ Ice.to_javascript_object = function(obj) {
         var copy;
         if(searchobj && Ice.isa(searchobj, Ice)) {
             return deepcopy(searchobj.as_jsonable());
-        } else if (window.moment && window.moment.isMoment && window.moment.isMoment(searchobj)) {
+        } else if (moment && moment.isMoment && moment.isMoment(searchobj)) {
             return searchobj._d;
 
         } else {
@@ -593,7 +587,6 @@ Ice.to_javascript_object = function(obj) {
             copy = searchobj.constructor ? searchobj.constructor() || {} : {};
         }
         // console.log("Deepcopying, starting with ", copy, copy.cid);
-        window.debug = copy;
         for(var i in searchobj) {
             // console.log("Copying ", i, searchobj[i])
 
@@ -604,7 +597,7 @@ Ice.to_javascript_object = function(obj) {
             if(searchobj[i] && searchobj[i].constructor === Date) {
                 //console.log("It's a date");
                 copy[i] = Date_to_datetime(searchobj[i]);
-            } else if(searchobj[i] && window.moment && window.moment.isMoment && window.moment.isMoment(searchobj[i])) {
+            } else if(searchobj[i] && moment && moment.isMoment && moment.isMoment(searchobj[i])) {
                 //console.log("It's a date");
                 copy[i] = Date_to_datetime(searchobj[i]._d);
             } else if(searchobj[i] && Ice.isa(searchobj[i], Ice)) {
@@ -633,3 +626,6 @@ Ice.to_javascript_object = function(obj) {
     }
     return copyobj;
 };
+
+
+});
