@@ -505,10 +505,12 @@ Ice.Registry = ClassRegistry(Ice);
 
 Ice.loads = function (stringed) {
     var res = JSON.parse(stringed);
-
+    return Ice.loadobj(res);
+}
+Ice.loadobj = function(plain_obj) {
 
     var wrapper = {
-        'wrapped': res
+        'wrapped': plain_obj
     };
     function deepsearch(obj) {
         for(var i in obj) {
@@ -581,11 +583,22 @@ Ice.to_javascript_object = function(obj) {
             return deepcopy(searchobj.as_jsonable());
         } else if (moment && moment.isMoment && moment.isMoment(searchobj)) {
             return searchobj._d;
-
+/*
         } else {
-
             copy = searchobj.constructor ? searchobj.constructor() || {} : {};
         }
+    */
+        } else if(searchobj instanceof Promise) {
+            return undefined;  // drop promises.  should probably drop functions too but
+
+
+        } else if(searchobj !== undefined && searchobj !== null){
+            // this is what constructs a new object or Array.
+            copy = searchobj.constructor ? searchobj.constructor() || {} : {};
+        } else {
+            copy = searchobj;
+        }
+
         // console.log("Deepcopying, starting with ", copy, copy.cid);
         for(var i in searchobj) {
             // console.log("Copying ", i, searchobj[i])
