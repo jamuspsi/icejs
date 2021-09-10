@@ -11,6 +11,7 @@ const browser_require = function(package_name, file_name, local_var) {
     if(local_var && local_var in this) {
         return this[local_var];
     }
+    console.warn('Module ', package_name, ' not found through browser_require.  Falling back to loading from global scope.');
     return this; // allow us to destructure it out of globals, or fail
 }
 
