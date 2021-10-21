@@ -44,16 +44,20 @@ if(ko) {
     }
 
 
-    var indexedObservable = exports.indexedObservable = function(initial, attr) {
+    var indexedListObservable = exports.indexedListObservable = function(initial, opts) {
         if(initial === undefined) initial = [];
-        if(attr === undefined) attr = 'id';
+
+        opts = opts || {};
+        if(!opts.indexer) {
+            opts.indexer = (obj)=>obj.id();
+        }
 
         var list = ko.observableArray(initial);
 
-        var obs = ko.computed({
+        var obs = ko.pureComputed({
             'read': function() {
                 return _.indexBy(list(), function(i) {
-                    return i[attr]();
+                    return opts.indexer(i);
                 });
             },
             'write': function(val) {
@@ -76,103 +80,115 @@ if(ko) {
     };
 
 
-    var weakObservable = exports.weakObservable = function(opts) {
+    var forwardObservable = exports.forwardObservable = function(opts) {
 
-        opts.attr = opts.attr || 'id';
         opts.initial = opts.initial || null;
 
+        var store = opts.store || (function( ){
+            return opts ? opts.id() : null;
+        });
+
         if(!opts.restore) {
-            return 'No restore function provided!';
+            throw 'No restore function provided!';
         }
 
         var concrete = ko.observable(opts.initial);
-        var weakref = ko.observable(null);
+        var forwardref = ko.observable(null);
 
         var comp = ko.computed({
             'read': concrete,
             'write': function(val) {
-                if(val && val.$weakref) {
-                    console.log("Storing weakref ", val);
-                    weakref(val);
+                if(val && val.$forwardref) {
+                    console.log("Storing forwardref ", val.$forwardref);
+                    forwardref(val.$forwardref);
                 } else {
                     concrete(val);
-                    weakref({
-                        '$weakref': val ? val[opts.attr]() : null,
-                    });
+                    forwardref(opts.store(val));
                 }
             }
         });
-        comp.weakref = weakref;
         comp.restore = function() {
-            var args = Array.prototype.slice.call(arguments);
-            var id = weakref() ? weakref().$weakref : null;
-            if(!id) {
+            // var args = Array.prototype.slice.call(arguments);
+            var forwardref = forwardref();
+            if(!forwardref) {
                 concrete(null);
                 return;
             }
-            var found = opts.restore.apply(root, [id].concat(args));
+            var found = opts.restore(forwardref);
             concrete(found);
         }
-        comp.isWeak = true;
+
+        // this is what loads/dumps stores into.
+        comp.forwardref = forwardref;
+        comp.isForward = true;
 
         return comp;
     }
 
 
-    var weakObservableList = exports.weakObservableList = function(opts) {
+    var forwardIndexedObservable = exports.forwardIndexedObservable = function(opts) {
+        var concrete = indexedListObservable(opts);
 
-        opts.attr = opts.attr || 'id';
-        opts.initial = opts.initial || null;
-
-        if(!opts.restore) {
-            return 'No restore function provided!';
+        if(!opts.store) {
+            opts.store = opts.indexer;
         }
 
-        var concrete = indexedObservable(opts.initial, opts.attr);
-        var weakref = ko.observable(null);
+        if(!opts.restore) {
+            throw 'No restore function provided!';
+        }
 
-        function sync_weakref() {
-            weakref({
-                '$weakref': _.map(concrete(), function(i) {
-                    return i[opts.attr]();
-                })
-            });
+        var forwardrefs = ko.observableArray(null);
+
+        function sync_weakrefs() {
+            forwardrefs(
+                _.map(concrete.list(), opts.store)
+            );
         }
 
         var comp = ko.computed({
             'read': concrete,
             'write': function(val) {
-                if(val.$weakref) {
-                    weakref(val);
+                if(val.$forwardref) {
+                    forwardrefs(val.$forwardref);
                 } else {
+                    // replacing the whole dict.
                     concrete(val);
-                    sync_weakref();
+                    sync_weakrefs();
                 }
             }
         });
-        comp.weakref = weakref;
+        
         comp.restore = function() {
-            var args = Array.prototype.slice.call(arguments);
-            var weakrefs = [];
-            if(weakref()) weakrefs = weakref().$weakref;
+            var forwardrefs = [];
+            if(forwardrefs()) 
+                forwardrefs = forwardrefs();
 
-            var found = _.map(weakrefs, function(w) {
-                if(!w) return null;
-                return opts.restore.apply(root, [w].concat(args));
-            });
+            var found = _.map(forwardrefs, opts.restore);
 
-            concrete(_.filter(found));
+            if(opts.prune_lost_references) {
+                found = _.filter(found);
+            }
+
+            // replace the whole thing, and force a reindex.
+            comp(found);
+            
         }
-        comp.isWeak = true;
 
         comp.push = function(o) {
             concrete.push(o);
-            sync_weakref();
-            // weakref.push(o[opts.attr]());
+            forwardrefs.push(opts.store(o));
+
+            // I had this most recently before the refactor
+            // as a complete reindex, but I can't see that being useful.
+            //sync_weakref();
+            // forwardref.push(o[opts.attr]());
         };
 
         comp.list = concrete.list;
 
+        // this is what loads/dumps uses.
+        comp.forwardref = forwardrefs;
+        comp.isForward = true;
         return comp;
     }
 
@@ -293,8 +309,8 @@ exports.Ice = Ice = Class.$extend('Ice', {
         _.each(self.__keys__(), function(key) {
             var val = key in self ? self[key] : null;
             if(ko.isObservable(val)) {
-                if(val.isWeak) {
-                    val = val.weakref();
+                if(val.isForward) {
+                    val = val.forwardref();
                 } else if(val.isIndexedObservable) {
                     val = val.list();
                 } else {
@@ -328,7 +344,7 @@ exports.Ice = Ice = Class.$extend('Ice', {
                 if(val.patch_on_write && !val.is_dirty()) return;
 
                 if(val.isComponentList) {
-                    // This automatically works with indexedObservables because we're using map(), which will hit its values.
+                    // This automatically works with indexedListObservables because we're using map(), which will hit its values.
                     val = _.map(val(), function(component) {
                         return component ? component.as_patch() : component;
                     });
@@ -354,8 +370,8 @@ exports.Ice = Ice = Class.$extend('Ice', {
             }
             var target = self[key];
             if(target && ko.isObservable(target)) {
-                if(target.isWeak) {
-                    target.weakref(val);
+                if(target.isForward) {
+                    target.forwardref(val);
                 } else if(target.isIndexedObservable) {
                     target.list(val);
                 } else {
@@ -389,6 +405,41 @@ exports.Ice = Ice = Class.$extend('Ice', {
                 self[key] = val;
             }
         });
+    },
+    restore_forward_refs: function() {
+        // this method only actually makes sense when I'm deserializing a root, right?
+        // Yeah, it's a manual call, so even if I were deserializing some template
+        // or cloning a subobject, I just wouldn't call it.
+        // If anything I might notate a class telling the deserializer to call this.
+        var self = this;
+
+        var root = this;
+        var search_and_restore = function(obj) {
+            for(k in obj) {
+                if(!obj.hasOwnProperty(i)) {
+                    continue;
+                }
+
+                var target = obj[k];
+                if(ko.isObservable(target)) {
+                    if(target.isForward) {
+                        target.restore();
+                    } else {
+                        target = target();
+                    }
+                }
+                if(Ice.isIce(target)) {
+                    search_and_restore(target); // this maintains root through closure
+                } else if(typeof target == 'object') {
+                    // this is a (possible observable) array or object, so we attempt to
+                    // restore it as well.
+                    // heterogenous roots are going to be broken broken broken.
+                    search_and_restore(target);
+                }
+            }
+
+        };
+        search_and_restore(self);
     },
 });
 Ice.INSTANCE_COUNTERS = {};
@@ -532,6 +583,11 @@ Ice.loadobj = function(plain_obj) {
                 obj[i] = Ice.from_jsonable(obj[i]);
             } else if(obj[i] && typeof(obj[i]) == 'object') {
                 deepsearch(obj[i]);
+                // this is written to replace-in-place: objects and Arrays (in this elif)
+                // are searched again and replaced by index if there's something to do.
+                // there's no else, so only (objects with a kls, property, or type attr) or objects
+                // or lists are checked.  Everything else falls through and ISN'T recursively passed
+                // to deepsearch. (We're not searching ints, for instance.)
             }
         }
     }
