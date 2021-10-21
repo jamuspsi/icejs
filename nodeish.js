@@ -8,11 +8,21 @@ const browser_require = function(package_name, file_name, local_var) {
     if(modules[package_name]) {
         return modules[package_name].exports;
     }
+    // This allows me to get ko and classy into this paradigm by destructuring them out in the browser
+    // FIXME: Why is this necessary?  Why don't ko and classy respect my require/define?
     if(local_var && local_var in this) {
         return this[local_var];
     }
-    console.warn('Module ', package_name, ' not found through browser_require.  Falling back to loading from global scope.');
-    return this; // allow us to destructure it out of globals, or fail
+
+    throw 'Module ' + package_name + ' not found through browser_require.  Check your load order, or call nodeish_included_in_window if the package is loaded into Window.  Also check that your define() is naming the correct module.';    
+    // console.error('Module ', package_name, ' not found through browser_require.  Falling back to loading from global scope.');
+    // return this; // allow us to destructure it out of globals, or fail
+}
+
+const nodeish_included_in_window = function(...package_names) {
+    for(i in package_names) {
+        modules[package_names[i]] = {'exports': this};
+    }
 }
 
 /*
