@@ -1,6 +1,12 @@
+var define = (this.nodeish||require('@nodeish'))(this.window||arguments);
+define('icemodel', function({exports, require, rfr, module}) {
+
+    var {Ice} = rfr('ice', 'icejs/ice.js');
+    var ko = rfr('ko', 'koplus/knockout-3.4.0.koplus.js', 'ko');
+    var _ = require('lodash', '', '_');
 
 
-IceModel = Ice.$extend('IceModel', {
+exports.IceModel = IceModel = Ice.$extend('IceModel', {
     __init__: function() {
         var self = this;
         self.$super();
@@ -12,6 +18,8 @@ IceModel = Ice.$extend('IceModel', {
         self.dirty = ko.observable(false).extend({'dirty_tracker': true});
 
         self.vm = null;
+
+        self.feedback = ko.observable(ValidationFeedback());
     },
     __keys__: function() {
         return this.$super().concat(['pk']);
@@ -79,12 +87,6 @@ IceModel = Ice.$extend('IceModel', {
         // }
         // return true;
     },
-    clear_errors: function() {
-        var self = this;
-        self.errors([]);
-        self.field_errors({});
-
-    },
 
     'delete': function() {
         var self = this;
@@ -98,12 +100,57 @@ IceModel = Ice.$extend('IceModel', {
         return def;
 
     },
-    has_errors: function() {
+    set_feedback: function(feedback) {
         var self = this;
-
-        return self.errors().length || _.keys(self.field_errors()).length;
-    }
+        self.feedback(feedback);
+        _.each(feedback.component_feedbacks(), function(sub, fieldname) {
+            var field = self[fieldname];
+            if(field.isComponent && field()) {
+                field().set_feedback(sub);
+            }
+        });
+        _.each(feedback.componentlist_feedbacks(), function(subs, fieldname) {
+            var field = self[fieldname];
+            if(field.isComponentList && field()) {
+                var comps = field();
+                _.each(subs, function(sub, i) {
+                    comps[i].set_feedback(sub);
+                });                
+            }
+        });
+    },
 });
+
+ValidationFeedback = Ice.$extend('ValidationFeedback', {
+    __init__: function() {
+        var self = this;
+        self.$super();
+
+        self.object_errors = ko.observableArray([]);
+        self.fields = ko.observableArray([]);
+        self.component_feedbacks = ko.observableArray([]);
+        self.componentlist_feedbacks = ko.observableArray([]);
+        self.has_any_error = ko.observable();
+    },
+    __keys__: function() {
+        return this.$super().concat([
+            'object_errors',
+            'fields',
+            'component_feedbacks',
+            'componentlist_feedbacks',
+            'has_any_error',
+        ]);
+    },
+    get: function(fieldname) {
+        var self = this;
+        if(!fieldname) {
+            return self.object_errors().join('; ');
+        } else {
+            return (self.fields()[fieldname] || []).join('; ');
+        }
+    },
+});
+
 
 
 NotImplementedException = function(method) {
@@ -113,3 +160,5 @@ NotImplementedException = function(method) {
         return this.message + ' ' + this.method;
     }
 };
+
+});

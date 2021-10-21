@@ -3,7 +3,7 @@ define('icejs', function({exports, require, rfr, module}) {
 
 Class = rfr('Class', 'classy/classy.js', 'Class');
 var ko = rfr('ko', 'koplus/knockout-3.4.0.koplus.js', 'ko');
-var moment = require('moment');
+var {moment} = require('moment');
 var _ = require('lodash', '', '_');
 
 
@@ -411,7 +411,12 @@ Ice.issubclass = function(kls, base) {
 
 
 Ice.datetime_to_Date = function(obj) {
-    var val = new Date(obj.year, obj.month-1, obj.day, obj.hour, obj.minute, obj.second, obj.microsecond/1000);
+    var val;
+    if(obj.d) {
+        val = new Date(obj.d);
+    } else {
+        val = new Date(obj.year, obj.month-1, obj.day, obj.hour, obj.minute, obj.second, obj.microsecond/1000);
+    }
     if(window.moment) {
         return moment(val);
     }
@@ -435,6 +440,7 @@ ClassRegistry = Ice.$extend('ClassRegistry', {
             if(Ice.Registry && self !== Ice.Registry) {
                 Ice.Registry.register(kls);
             }
+            // Add a from_jsonable classmethod
             kls.from_jsonable = _.bind(self.from_jsonable, self);
         }
     },
@@ -567,14 +573,18 @@ Ice.to_javascript_object = function(obj) {
     function Date_to_datetime(obj) {
         return {
             '__kls__': 'datetime',
-            'year': obj.getFullYear(),
-            'month': obj.getMonth() + 1,
-            'day': obj.getDate(),
-            'hour': obj.getHours(),
-            'minute': obj.getMinutes(),
-            'second': obj.getSeconds(),
-            'microsecond': obj.getMilliseconds() * 1000
+            'd': obj.toISOString(),
         };
+        // return {
+        //     '__kls__': 'datetime',
+        //     'year': obj.getFullYear(),
+        //     'month': obj.getMonth() + 1,
+        //     'day': obj.getDate(),
+        //     'hour': obj.getHours(),
+        //     'minute': obj.getMinutes(),
+        //     'second': obj.getSeconds(),
+        //     'microsecond': obj.getMilliseconds() * 1000
+        // };
     }
 
     function deepcopy(searchobj) {

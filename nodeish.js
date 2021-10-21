@@ -94,3 +94,7 @@ var define = nodeish(this.window||arguments);
 define('nodeish', function({exports, require, rfr, module}) {
     module.exports = nodeish;
 });
+
+if(this.window) {
+    rfr = browser_require;
+}
