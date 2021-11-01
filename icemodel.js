@@ -1,7 +1,7 @@
 var define = (this.nodeish||require('@nodeish'))(this.window||arguments);
 define('icemodel', function({exports, require, rfr, module}) {
 
-    var {Ice} = rfr('ice', 'icejs/ice.js');
+    var {Ice} = rfr('icejs', 'icejs/ice.js');
     var ko = rfr('ko', 'koplus/knockout-3.4.0.koplus.js', 'ko');
     var _ = require('lodash', '', '_');
 

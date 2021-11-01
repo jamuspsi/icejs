@@ -363,6 +363,11 @@ exports.Ice = Ice = Class.$extend('Ice', {
     update_from_jsonable: function(jsonable) {
 
         var self = this;
+
+        if(jsonable.$class) {
+            throw new Error('Cannot update from jsonable with a live class.  Did you mean to update_from_instance?');
+        }
+        
         _.each(self.__keys__(), function(key) {
             var val = jsonable[key];
             if (val && val.__kls__) {
@@ -388,21 +393,49 @@ exports.Ice = Ice = Class.$extend('Ice', {
         // Another instance of this method.
         var self = this;
         _.each(self.__keys__(), function(key) {
-            var val = instance[key];
-            if(val && ko.isObservable(val)) {
-                val = val();
+            var srcval = instance[key];
+            if(srcval && ko.isObservable(srcval)) {
+                srcval = srcval();
             }
-
-            if (val && val.__kls__) {
-                val = Ice.from_jsonable(val);
-            }
+            /*
+            // This shouldn't be possible, because I'm in instance-land and it should just exist.
+            if (srcval && srcval.__kls__) {
+                srcval = Ice.from_jsonable(srcval);
+            }*/
             var target = self[key];
-            if(target && ko.isObservable(target)) {
-                if(ko.isWriteableObservable(target)) {
-                    target(val);
+            if(target && ko.isObservable(target) && ko.isWriteableObservable(target)) {
+                // We're going to update this in place.
+                // Wait, this doesn't work.  the component class may have changed.
+                if(target.isComponent) {
+                    if(target().$class === srcval.$class) {
+                        // update it if the class is the same.
+                        target().update_from_instance(srcval)
+                    } else {
+                        // otherwise, replace it.  I can't do better.
+                        target(srcval);
+                    }
+                } else if(target.isComponentList) {
+                    // Index the existing.
+                    var existing = _.indexBy(target(), o=>o.pk());
+                    // existing may have null keys, but those won't ever hit.
+                    var newset = [];
+                    _.each(srcval, function(comp) {
+                        var pk = comp.pk();
+                        var reuse = existing[pk];
+                        // don't reuse it if it's not the same class.
+                        if(!reuse || reuse.$class !== comp.$class) {
+                            newset.push(comp);
+                        } else {
+                            reuse.update_from_instance(comp);
+                            newset.push(reuse);
+                        }
+                    });
+                    target(newset);
+                } else {
+                    target(srcval);
                 }
             } else {
-                self[key] = val;
+                self[key] = srcval;
             }
         });
     },
