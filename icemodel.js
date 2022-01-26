@@ -2,11 +2,13 @@ var define = (this.nodeish||require('@nodeish'))(this.window||arguments);
 define('icemodel', function({exports, require, rfr, module}) {
 
     var {Ice} = rfr('icejs', 'icejs/ice.js');
+    var {MarshalledObject} = rfr('icejs/marshalling', 'icejs/marshalling.js');
+
     var ko = rfr('ko', 'koplus/knockout-3.4.0.koplus.js', 'ko');
     var _ = require('lodash', '', '_');
 
 
-exports.IceModel = IceModel = Ice.$extend('IceModel', {
+exports.IceModel = IceModel = MarshalledObject.$extend('IceModel', {
     __init__: function() {
         var self = this;
         self.$super();
@@ -153,12 +155,13 @@ ValidationFeedback = Ice.$extend('ValidationFeedback', {
 
 
 
-NotImplementedException = function(method) {
-    this.value = method;
-    this.message = 'Unimplemented method';
-    this.toString = function() {
-        return this.message + ' ' + this.method;
-    }
-};
+// NotImplementedException = function(method) {
+//     this.value = method;
+//     this.message = 'Unimplemented method';
+//     this.toString = function() {
+//         return this.message + ' ' + this.method;
+//     }
+// };
+
 
 });

@@ -136,60 +136,148 @@ define('icejs/marshalling', function({exports, require, rfr, module}) {
 
         return invoke;
     };
-    exports.MarshalledObject = window.MarshalledObject = IceModel.$extend('MarshalledObject', {
+    exports.MarshalledObject = MarshalledObject = Ice.$extend('MarshalledObject', {
         __init__: function() {
             var self = this;
             self.$super();
              
-            self.marshalled_methods = [];
+            // self.marshalled_methods = [];
 
         },
-        __keys__: function() {
-            return this.$super().concat([
-                'marshalled_methods',
-            ]);
-        },
+        // __keys__: function() {
+        //     return this.$super().concat([
+        //         'marshalled_methods',
+        //     ]);
+        // },
         setup: function() {
             var self = this;
             // Called before bindings
-            _.each(self.marshalled_methods, function(action) {
-                var marshalled_method = MarshalledMethod({
-                    'url': '',
-                    'method': 'post',
-                    'action': action,
-                });
-
-                var wrapped = function(kwargs) {
-                    if(self[action+'/kwargs']) {
-                        kwargs = self[action+'/kwargs'](kwargs);
-                        if(!kwargs) return; // bail out.
-                    }
-
-                    var def = marshalled_method(kwargs);
-                    if(self[action+'/call']) {
-                        self[action+'/call'](action, kwargs, def);
-                    }
-                    self.action_call(def, kwargs); // The global hook.
-
-                    if(self[action+'/done']) {
-                        def.done(_.bind(self[action+'/done'], self));
-                    }
-                    if(self[action+'/fail']) {
-                        def.fail(_.bind(self[action+'/fail'], self));
-                    }
-                    if(self[action+'/always']) {
-                        def.always(_.bind(self[action+'/always'], self));
-                    }
-
-                    return def;
-                    
-                }
-                self[action] = wrapped;
-
-
-
-            });
+            
         },
     });
 
+    MarshalledObject.$marshall_all = function(blobs) {
+        blobs.forEach(blob=>MarshalledObject.$marshall(blob));
+    };
+
+    MarshalledObject.$marshall = function(blob) {
+        // array wrap for fun.
+        var baseclass = Ice.get_type(blob);
+        var methods = {
+            __init__: function() {
+                var self = this;
+                self.$super();
+
+                blob.fields.forEach(f=>{
+                    var obs;
+                    if(false) {
+
+                    } else {
+                        obs = ko.observable(f.default);
+                    }
+
+                    obs.fieldinfo = f; // extra reference per field per instance, a bit heavy
+
+                    if(f.track_dirty) {
+
+                    }
+                    self[f.name] = obs;
+                });
+            },
+            __keys__: function() {
+                return this.$super().concat(blob.__keys__);
+            },
+            __patchkeys__: function() {
+                return this.$super().concat(blob.__patchkeys__);
+            },
+        };
+
+
+        _.each(blob.marshalled_methods, function(action) {
+            var marshalled_method = MarshalledMethod({
+                'url': blob.endpoint_url,
+                'method': 'post',
+                'action': action,
+            });
+
+            var wrapped = function(kwargs) {
+                var self = this;
+
+                if(self[action+'/kwargs']) {
+                    kwargs = self[action+'/kwargs'](kwargs);
+                    if(!kwargs) return; // bail out.
+                }
+
+                var def = marshalled_method(kwargs);
+                if(self[action+'/call']) {
+                    self[action+'/call'](action, kwargs, def);
+                }
+                self.action_call(def, kwargs); // The global hook.
+
+                if(self[action+'/done']) {
+                    def.done(_.bind(self[action+'/done'], self));
+                }
+                if(self[action+'/fail']) {
+                    def.fail(_.bind(self[action+'/fail'], self));
+                }
+                if(self[action+'/always']) {
+                    def.always(_.bind(self[action+'/always'], self));
+                }
+
+                return def;
+                
+            }
+            methods[action] = wrapped;
+
+        });
+
+
+
+
+
+        var newclass = baseclass.$extend(blob.name, methods);
+        newclass.$marshalled = true;
+        newclasss.$methods = methods;
+
+        return newclass;
+    };
+
+    var orig_ice_extend = Ice.$extend; // this is classy's extend
+
+    Ice.$implement = MarshalledObject.$implement = function(name, impl) {
+        // check to see if this class is already marshalled
+
+        var cls = Ice.get_type(name);
+        // if so, have it extend itself?
+        if(cls) {
+            var extended = cls.$extend(name, impl); // Replacing itself.
+            return extended;
+
+            // but also, we need to change the bases of every one of its subclasses.
+            // which is a recursive process... 
+            // okay the thing is, this should only really be done to marshalled ones.
+            // if multiple classes in the inheritance chain are getting marshalled,
+            // then as long as their implementations are calling $implement IN ORDER
+            // there's no need for recursion here.  Okay yes there is.
+            // but not much need for anything else.
+
+
+            _.each(cls.$subclasses, subcls=>{
+                var replaced = extended.$extend(subcls.$name, subcls.$methods);
+            });
+        }
+
+        return 
+    };
+
+    Ice.$rebase = function(new_parent) {
+        var cls = this;
+        cls.
+    }
+
+
+
+
+
 });
+
