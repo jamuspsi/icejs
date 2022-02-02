@@ -591,6 +591,7 @@ ClassRegistry = Ice.$extend('ClassRegistry', {
 });
 
 Ice.Registry = ClassRegistry(Ice);
+Ice.get_type = _.bind(Ice.Registry.get_type, Ice.Registry);
 
 
 Ice.loads = function (stringed) {
@@ -738,6 +739,9 @@ Ice.to_javascript_object = function(obj) {
     }
     return copyobj;
 };
+
+
+
 
 
 });

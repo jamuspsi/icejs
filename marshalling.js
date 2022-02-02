@@ -158,11 +158,23 @@ define('icejs/marshalling', function({exports, require, rfr, module}) {
 
     MarshalledObject.$marshall_all = function(blobs) {
         blobs.forEach(blob=>MarshalledObject.$marshall(blob));
+
+        _.each(deferred_implementations, function(impl, name) {
+            Ice.$implement(name, impl, true); // Try to late-implement
+        });
     };
 
     MarshalledObject.$marshall = function(blob) {
         // array wrap for fun.
-        var baseclass = Ice.get_type(blob);
+        var existing = Ice.get_type(blob.name);
+        if(existing && !existing.$marshalled) {
+            return; // Ignore this one
+        }
+
+        var baseclass = Ice.get_type(blob.base_class);
+        if(!baseclass) {
+            throw 'Could not marshall class '+ blob.name+ ' because the base class '+ blob.base_class+ ' could not be found';
+        }
         var methods = {
             __init__: function() {
                 var self = this;
@@ -185,10 +197,10 @@ define('icejs/marshalling', function({exports, require, rfr, module}) {
                 });
             },
             __keys__: function() {
-                return this.$super().concat(blob.__keys__);
+                return this.$super().concat(blob.keys);
             },
             __patchkeys__: function() {
-                return this.$super().concat(blob.__patchkeys__);
+                return this.$super().concat(blob.patchkeys);
             },
         };
 
@@ -236,43 +248,72 @@ define('icejs/marshalling', function({exports, require, rfr, module}) {
 
 
         var newclass = baseclass.$extend(blob.name, methods);
-        newclass.$marshalled = true;
-        newclasss.$methods = methods;
+        newclass.$marshalled = blob;
+        newclass.$methods = methods;
 
         return newclass;
     };
 
     var orig_ice_extend = Ice.$extend; // this is classy's extend
 
-    Ice.$implement = MarshalledObject.$implement = function(name, impl) {
+    var deferred_implementations = {};
+
+    Ice.$implement = MarshalledObject.$implement = function(name, impl, disable_deferring) {
+    
         // check to see if this class is already marshalled
 
-        var cls = Ice.get_type(name);
+        var marshalled = Ice.get_type(name);
         // if so, have it extend itself?
-        if(cls) {
-            var extended = cls.$extend(name, impl); // Replacing itself.
-            return extended;
-
-            // but also, we need to change the bases of every one of its subclasses.
-            // which is a recursive process... 
-            // okay the thing is, this should only really be done to marshalled ones.
-            // if multiple classes in the inheritance chain are getting marshalled,
-            // then as long as their implementations are calling $implement IN ORDER
-            // there's no need for recursion here.  Okay yes there is.
-            // but not much need for anything else.
-
-
-            _.each(cls.$subclasses, subcls=>{
-                var replaced = extended.$extend(subcls.$name, subcls.$methods);
-            });
+        if(!marshalled) {
+            if(disable_deferring) {
+                throw 'Could not implement class '+name+' because it could not be found.';
+            }
+            deferred_implementations[name] = impl;
+            return;
         }
 
-        return 
+        if(!marshalled.$marshalled) {
+            throw 'Could not implement class '+name+' because it is not a marshalled class.  Did you double-implement?';
+        }
+
+        // create a new class extending off the original marshalled class.
+        var implemented = marshalled.$extend(name, impl);
+        marshalled.$name = marshalled.$classname = marshalled.$name+'-Marshalled';
+
+        // but also, we need to change the bases of every one of its subclasses.
+        // which is a recursive process... 
+        // okay the thing is, this should only really be done to marshalled ones.
+        // if multiple classes in the inheritance chain are getting marshalled,
+        // then as long as their implementations are calling $implement IN ORDER
+        // there's no need for recursion here.  Okay yes there is.
+        // but not much need for anything else.
+
+
+        _.each(marshalled.$subclasses, subcls=>{
+            if(subcls === implemented) return; // Don't rebase this one, we just made it!
+            console.log("About to rebase subcls ", subcls.$name, !!subcls.$marshalled, " because the marshaleld subclass ", marshalled.$name, ' is implemented.');
+            subcls.$rebase(implemented);
+            var replaced = implemented.$extend(subcls.$name, subcls.$methods);
+
+            // in case any of these subclassed ones are themselves marshalled
+            // stand-ins.
+            replaced.$marshalled = subcls.$marshalled;
+            replaced.$methods = subcls.$methods;
+        });
+        return implemented;
     };
 
     Ice.$rebase = function(new_parent) {
         var cls = this;
-        cls.
+        var rebased = implemented.$extend(cls.$name, cls.$methods);
+        rebased.$marshalled = cls.$marshalled;
+        rebased.$methods = cls.$methods;
+
+        _.each(this.$subclasses, subcls=>{
+            subcls.$rebase(cls);
+        });
+
+        return rebased;
     }
 
 
