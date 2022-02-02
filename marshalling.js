@@ -278,7 +278,7 @@ define('icejs/marshalling', function({exports, require, rfr, module}) {
 
         // create a new class extending off the original marshalled class.
         var implemented = marshalled.$extend(name, impl);
-        marshalled.$name = marshalled.$classname = marshalled.$name+'-Marshalled';
+        marshalled.$name = marshalled.$classname = marshalled.$name+'__Marshalled__';
 
         // but also, we need to change the bases of every one of its subclasses.
         // which is a recursive process... 
@@ -303,18 +303,7 @@ define('icejs/marshalling', function({exports, require, rfr, module}) {
         return implemented;
     };
 
-    Ice.$rebase = function(new_parent) {
-        var cls = this;
-        var rebased = implemented.$extend(cls.$name, cls.$methods);
-        rebased.$marshalled = cls.$marshalled;
-        rebased.$methods = cls.$methods;
-
-        _.each(this.$subclasses, subcls=>{
-            subcls.$rebase(cls);
-        });
-
-        return rebased;
-    }
+    // Ice.$rebase = 
 
 
 
