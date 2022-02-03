@@ -182,13 +182,30 @@ define('icejs/marshalling', function({exports, require, rfr, module}) {
 
                 blob.fields.forEach(f=>{
                     var obs;
-                    if(false) {
-
+                    if(f.t == 'Components') {
+                        obs = componentListObservable([]);
+                    } else if(f.t == 'Component') {
+                        obs = componentObservable(null);
                     } else {
                         obs = ko.observable(f.default);
                     }
 
                     obs.fieldinfo = f; // extra reference per field per instance, a bit heavy
+                    if(f.select) {
+                        obs.extend({
+                            'selection': {
+                                null_option: f.null_option,
+                                null_text: f.null_text,
+                                options: f.options,
+                            }
+                        })
+                    }
+
+                    if(self.feedback) {
+                        obs.feedback = self.feedback;
+                        obs.error = ()=>self.feedback().get(f.name);
+                    }
+
 
                     if(f.track_dirty) {
 
