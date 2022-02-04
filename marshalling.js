@@ -214,6 +214,7 @@ define('icejs/marshalling', function({exports, require, rfr, module}) {
                                 obs(val); // If this is undefined, sobeit.
                             }
                         });
+                        obs._id._object = obs;
                         self[f.name+'_id'] = obs._id;
                     }
 
@@ -222,9 +223,11 @@ define('icejs/marshalling', function({exports, require, rfr, module}) {
                         obs.error = ()=>self.feedback().get(f.name);
                     }
 
-
-                    if(f.track_dirty) {
-
+                    // console.log("Checking for dirty on ", self.$class.$name, ": ", self.dirty);
+                    if(!f.ignore_dirty && self.dirty) {
+                        obs.extend({
+                            'report_dirty': self.dirty,
+                        });
                     }
                     self[f.name] = obs;
                 });

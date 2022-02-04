@@ -29,42 +29,62 @@ exports.IceModel = IceModel = MarshalledObject.$extend('IceModel', {
     __patchkeys__: function() {
         return ['pk'];
     },
-    save: function() {
+    begin_save: function() {
         var self = this;
-
-        if(!self.can_save()) return null;
-
-
-
-        self.dirty.save_start();
-
-        var def = self.$class.save_api.post({
-            'patch': self.as_patch(),
-        }).fail(function(data, errors, field_errors) {
-            self.errors(errors);
-            self.field_errors(field_errors);
-            if(data && data.jsonable) {
-                self.update_from_jsonable(data.jsonable);
-            }
-
-            self.dirty.saving(false);
-
-        }).done(function(data) {
-            self.dirty.save_end();
-            self.clear_errors();
-            console.log('save successful, jsonable to update from is ', data.jsonable);
-            if(data && data.jsonable) {
-                self.update_from_jsonable(data.jsonable);
-            }
-            if(!self.dirty.changed_during_save) self.dirty.clean();
-
-
-        }).always(function() {
-        });
-
-        return def;
+        self.dirty.begin_save();
+    },
+    abort_save: function() {
+        var self = this;
+        self.dirty.saving(false);
+    },
+    finish_save: function(instance) {
+        var self = this;
+        self.dirty.finish_save();
+        if(self.dirty()) {
+            // we changed since we started saving, so discard this instance.
+            return;
+        }
+        if(instance){
+            self.update_from_instance(instance);
+        }
 
     },
+    // save: function() {
+    //     var self = this;
+
+    //     if(!self.can_save()) return null;
+
+
+
+    //     self.dirty.save_start();
+
+    //     var def = self.$class.save_api.post({
+    //         'patch': self.as_patch(),
+    //     }).fail(function(data, errors, field_errors) {
+    //         self.errors(errors);
+    //         self.field_errors(field_errors);
+    //         if(data && data.jsonable) {
+    //             self.update_from_jsonable(data.jsonable);
+    //         }
+
+    //         self.dirty.saving(false);
+
+    //     }).done(function(data) {
+    //         self.dirty.save_end();
+    //         self.clear_errors();
+    //         console.log('save successful, jsonable to update from is ', data.jsonable);
+    //         if(data && data.jsonable) {
+    //             self.update_from_jsonable(data.jsonable);
+    //         }
+    //         if(!self.dirty.changed_during_save) self.dirty.clean();
+
+
+    //     }).always(function() {
+    //     });
+
+    //     return def;
+
+    // },
 
     // Cleaning on client side is fairly duplicative and doesn't matter most of the time.
     // Now that the errors/field_errors are brought back through standard API stuff, this
@@ -102,6 +122,18 @@ exports.IceModel = IceModel = MarshalledObject.$extend('IceModel', {
         return def;
 
     },
+    update_from_jsonable: function(jsonable) {
+        var self = this;
+        self.$super(jsonable);
+        self.dirty.clean();
+        // console.log("Cleaning post update");
+    },
+    update_from_instance: function(instance) {
+        var self = this;
+        self.$super(instance);
+        self.dirty.clean();
+    },
+
     set_feedback: function(feedback) {
         var self = this;
         self.feedback(feedback);
@@ -120,6 +152,22 @@ exports.IceModel = IceModel = MarshalledObject.$extend('IceModel', {
                 });                
             }
         });
+    },
+
+    save_status: function() {
+        var self = this;
+        self.dirty(); // subscribe.
+
+        if(self.dirty.saving()) {
+            return 'saving';
+        }
+        if(!self.pk()) {
+            return 'new';
+        }
+        if(self.dirty()) {
+            return 'dirty';
+        }
+        return 'saved';
     },
 });
 
