@@ -90,16 +90,16 @@ define('icejs/marshalling', function({exports, require, rfr, module}) {
 
                 parse_json_response(jsonable);
 
-                deferred.reject(null, jsonable, call);
+                deferred.reject(null, call, jsonable);
             });
             xhr.done(function(data) {
                 // data is already loads'd
 
                 parse_json_response(data);
                 if(errors.length) {
-                    deferred.reject(data.ret, data, call);
+                    deferred.reject(data.ret, call, data);
                 } else {
-                    deferred.resolve(data.ret, data, call);
+                    deferred.resolve(data.ret, call, data);
                 }
             });
 
@@ -200,6 +200,22 @@ define('icejs/marshalling', function({exports, require, rfr, module}) {
                             }
                         })
                     }
+                    if(f.t == 'ForeignKey') {
+                        console.log("Creating _id on ", f.name)
+                        var key = key = function(o) { return o.pk ? o.pk() : o; };
+
+                        
+                        obs._id = ko.pure({
+                            'read': function() {
+                                return obs() ? key(obs()) : null;
+                            },
+                            'write': function(id) {
+                                val = _.find(obs.tweaked_options(), o=>o && key(o) == id);
+                                obs(val); // If this is undefined, sobeit.
+                            }
+                        });
+                        self[f.name+'_id'] = obs._id;
+                    }
 
                     if(self.feedback) {
                         obs.feedback = self.feedback;
@@ -283,7 +299,8 @@ define('icejs/marshalling', function({exports, require, rfr, module}) {
         // if so, have it extend itself?
         if(!marshalled) {
             if(disable_deferring) {
-                throw 'Could not implement class '+name+' because it could not be found.';
+                console.warn('Could not implement class '+name+' because it could not be found.');
+                return;
             }
             deferred_implementations[name] = impl;
             return;
