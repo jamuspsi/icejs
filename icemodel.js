@@ -40,10 +40,12 @@ exports.IceModel = IceModel = MarshalledObject.$extend('IceModel', {
     finish_save: function(instance) {
         var self = this;
         self.dirty.finish_save();
+        
+        /* Fixme
         if(self.dirty()) {
             // we changed since we started saving, so discard this instance.
             return;
-        }
+        } */
         if(instance){
             self.update_from_instance(instance);
         }
@@ -162,10 +164,17 @@ exports.IceModel = IceModel = MarshalledObject.$extend('IceModel', {
             return 'saving';
         }
         if(!self.pk()) {
+            if(self.feedback() && self.feedback().has_any_error()) {
+                return 'errors';
+            }
             return 'new';
         }
+        
         if(self.dirty()) {
             return 'dirty';
+        }
+        if(self.feedback() && self.feedback().has_any_error()) {
+            return 'errors';
         }
         return 'saved';
     },
@@ -198,6 +207,18 @@ ValidationFeedback = Ice.$extend('ValidationFeedback', {
         } else {
             return (self.fields()[fieldname] || []).join('; ');
         }
+    },
+    has_any: function(...these) {
+        var self = this;
+        if(!these.length) {
+            return !!self.has_any_error();
+        }
+        return !!_.any(these, f=>self.get(f));
+
+    },
+    has_object_errors: function() {
+        var self = this;
+        return self.object_errors().length;
     },
 });
 
