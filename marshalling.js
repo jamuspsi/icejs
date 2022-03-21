@@ -262,6 +262,16 @@ define('icejs/marshalling', function({exports, require, rfr, module}) {
                 }
                 self.action_call(def, kwargs); // The global hook.
 
+                if(self['__marshalled__/done']) {
+                    def.done(_.bind(self['__marshalled__/done'], self));
+                }
+                if(self['__marshalled__/fail']) {
+                    def.fail(_.bind(self['__marshalled__/fail'], self));
+                }
+                if(self['__marshalled__/always']) {
+                    def.always(_.bind(self['__marshalled__/always'], self));
+                }
+
                 if(self[action+'/done']) {
                     def.done(_.bind(self[action+'/done'], self));
                 }
