@@ -200,6 +200,14 @@ define('icejs/marshalling', function({exports, require, rfr, module}) {
                             }
                         })
                     }
+                    if(f.money) {
+                        obs.extend({
+                            'money': {
+                                nullable: f.null,
+                            }
+                        });
+                        obs.fixed.fieldinfo = f;
+                    }
                     if(f.t == 'ForeignKey') {
                         console.log("Creating _id on ", f.name)
                         var key = key = function(o) { return o.pk ? o.pk() : o; };
@@ -221,6 +229,11 @@ define('icejs/marshalling', function({exports, require, rfr, module}) {
                     if(self.feedback) {
                         obs.feedback = self.feedback;
                         obs.error = ()=>self.feedback().get(f.name);
+
+                        if(obs.fixed) {
+                            obs.fixed.feedback = obs.feedback;
+                            obs.fixed.error = obs.error;
+                        }
                     }
 
                     // console.log("Checking for dirty on ", self.$class.$name, ": ", self.dirty);
