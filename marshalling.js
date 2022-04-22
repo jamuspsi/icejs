@@ -208,6 +208,9 @@ define('icejs/marshalling', function({exports, require, rfr, module}) {
                         });
                         obs.fixed.fieldinfo = f;
                     }
+                    if(f.input_type == 'date') {
+                        obs.extend({'datetime': {}});
+                    }
                     if(f.t == 'ForeignKey') {
                         console.log("Creating _id on ", f.name)
                         var key = key = function(o) { return o.pk ? o.pk() : o; };
