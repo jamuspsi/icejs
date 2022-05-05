@@ -416,18 +416,31 @@ exports.Ice = Ice = Class.$extend('Ice', {
                     }
                 } else if(target.isComponentList) {
                     // Index the existing.
-                    var existing = _.indexBy(target(), o=>o.pk());
+                    var by_position = target();
+                    var existing = _.indexBy(by_position, o=>o.pk());
                     // existing may have null keys, but those won't ever hit.
+                    // ^^ WRONG- they totally hit and cause all sorts of potential issues!
+
+
                     var newset = [];
-                    _.each(srcval, function(comp) {
+                    _.each(srcval, function(comp, i) {
                         var pk = comp.pk();
                         var reuse = existing[pk];
                         // don't reuse it if it's not the same class.
-                        if(!reuse || reuse.$class !== comp.$class) {
-                            newset.push(comp);
-                        } else {
+                        if(pk && reuse && reuse.$class === comp.$class) {
                             reuse.update_from_instance(comp);
                             newset.push(reuse);
+                        } else if(!pk && by_position[i] && !by_position[i].pk()) {
+                            // We reuse blank instances that are in the same exact position.
+                            // otherwise we just use the newly delivered ones.  It's a "slightly better"
+                            // option that nevertheless might have some weird edge cases.
+                            // delete this elif if necessary
+                            reuse = by_position[i];
+                            reuse.update_from_instance(comp);
+                            newset.push(reuse);
+
+                        } else {
+                            newset.push(comp);
                         }
                     });
                     target(newset);

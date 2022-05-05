@@ -244,6 +244,26 @@ define('icejs/marshalling', function({exports, require, rfr, module}) {
                         obs.extend({
                             'report_dirty': self.dirty,
                         });
+
+                        // setup chaining for components
+                        if(f.t == 'Component') {
+                            obs.subscribeChanged(obj=>{
+                                if(obj && obj.dirty && obj.dirty.chained_to && !obj.dirty.chained_to.length) {
+                                    obj.dirty.chain_to(self.dirty);
+                                }
+                            });
+
+                        // and for component lists
+                        } else if(f.t == 'Components') {
+                            obs.subscribeChanged(objs=>{
+                                _.each(objs, obj=>{
+                                    if(obj && obj.dirty && obj.dirty.chained_to && !obj.dirty.chained_to.length) {
+                                        obj.dirty.chain_to(self.dirty);
+                                    }
+                                });
+                            });
+                            
+                        }
                     }
                     self[f.name] = obs;
                 });
