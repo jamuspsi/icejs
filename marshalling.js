@@ -378,7 +378,6 @@ define('icejs/marshalling', function({exports, require, rfr, module}) {
     Ice.$implement = MarshalledObject.$implement = function(name, impl, disable_deferring) {
     
         // check to see if this class is already marshalled
-
         var marshalled = Ice.get_type(name);
         // if so, have it extend itself?
         if(!marshalled) {
@@ -386,6 +385,7 @@ define('icejs/marshalling', function({exports, require, rfr, module}) {
                 console.warn('Could not implement class '+name+' because it could not be found.');
                 return;
             }
+            console.log("Deferring implementation of ", name);
             deferred_implementations[name] = impl;
             return;
         }
@@ -394,9 +394,16 @@ define('icejs/marshalling', function({exports, require, rfr, module}) {
             throw 'Could not implement class '+name+' because it is not a marshalled class.  Did you double-implement?';
         }
 
+        console.group("Implementing ", name, ' with subclasses ', marshalled.$subclasses.map(s=>s.$name));
+
         // create a new class extending off the original marshalled class.
+        var previous_subclasses = marshalled.$subclasses;
+        marshalled.$subclasses = [];
+
         var implemented = marshalled.$extend(name, impl);
         marshalled.$name = marshalled.$classname = marshalled.$name+'__Marshalled__';
+        // Re-register the marshalled version.
+        Ice.Registry.register(marshalled);
 
         // but also, we need to change the bases of every one of its subclasses.
         // which is a recursive process... 
@@ -406,19 +413,28 @@ define('icejs/marshalling', function({exports, require, rfr, module}) {
         // there's no need for recursion here.  Okay yes there is.
         // but not much need for anything else.
 
-
-        _.each(marshalled.$subclasses, subcls=>{
+        // marshalled subclasses must now be effectively ONLY the implementation.
+        if(previous_subclasses.length) {
+            console.log("A newly implemented class ", name, " had subclasses ", _.map(previous_subclasses, subcls=>subcls.$name));
+        }
+        // console.log("Checking to see if I need to rebase any subclasses of ", marshalled.$name);
+        _.each(previous_subclasses, subcls=>{
             if(subcls === implemented) return; // Don't rebase this one, we just made it!
-            console.log("About to rebase subcls ", subcls.$name, !!subcls.$marshalled, " because the marshaleld subclass ", marshalled.$name, ' is implemented.');
+            console.log("About to rebase subcls ", subcls.$namec, !!subcls.$marshalled, " because the marshaleld subclass ", marshalled.$name, ' is implemented.');
             subcls.$rebase(implemented);
-            var replaced = implemented.$extend(subcls.$name, subcls.$methods);
 
+            /* What the heck is this even for???            
+            var replaced = implemented.$extend(subcls.$name, subcls.$methods);
             // in case any of these subclassed ones are themselves marshalled
             // stand-ins.
             replaced.$marshalled = subcls.$marshalled;
             replaced.$methods = subcls.$methods;
+            */
         });
+        console.groupEnd();
+
         return implemented;
+
     };
 
     // Ice.$rebase = 

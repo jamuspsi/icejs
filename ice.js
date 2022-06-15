@@ -528,6 +528,8 @@ ClassRegistry = Ice.$extend('ClassRegistry', {
     __init__: function(kls) {
         var self = this;
 
+        self.klscounter = 1;
+
         self.override_kls_to_name = {};
         self.override_name_to_kls = {};
 
@@ -543,7 +545,20 @@ ClassRegistry = Ice.$extend('ClassRegistry', {
     },
     register: function(kls) {
         var self = this;
+        if(!kls.$counter) {
+            kls.$counter = self.klscounter;
+            self.klscounter += 1;
+        }
 
+        kls.$namec = kls.$name+'-'+kls.$counter;
+        // if(!kls.$namec) {
+        //     console.trace("Tried to register a class with no $name???", kls);
+        // }
+        // if('verbose') {
+        //     console.groupCollapsed("Registering ", kls.$namec)
+        //     console.trace();
+        //     console.groupEnd();
+        // }
         self.__typemap__[kls.$name] = kls;
     },
     override: function(name, kls) {
