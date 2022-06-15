@@ -17,13 +17,15 @@ define('icejs/marshalling', function({exports, require, rfr, module}) {
             self.logging = [];
             self.log_entries = [];
 
-            self.url = opts.url || '';
+            self.url = opts.url || null;
             self.http_method = opts.http_method || 'post';
             
             self.action = opts.action;
             self.kwargs = opts.kwargs || {};
             self.meta = {};
             self.ret = undefined;
+
+            self.pk = opts.pk || null;
 
         },
         __keys__: function() {
@@ -32,7 +34,7 @@ define('icejs/marshalling', function({exports, require, rfr, module}) {
                 'messages', 'errors',
                 'logging', 'log_entries',
                 'url', 'http_method', 'action', 'kwargs', 'meta', 'ret',
-
+                'pk',
             ]);
         },
         send: function() {
@@ -41,6 +43,9 @@ define('icejs/marshalling', function({exports, require, rfr, module}) {
 
             if(!call.action) {
                 throw new Error('A marshalled call MUST specify an action.');
+            }
+            if(!self.url) {
+                throw new Error('All marshalled calls must have a reversed, not implied uri');
             }
 
 
@@ -112,21 +117,30 @@ define('icejs/marshalling', function({exports, require, rfr, module}) {
         var method = _.extend({}, opts);
 
         method.action = opts.action;
-        method.url = method.url || '';
+        // method.url = method.url || '';
+        // method.instance_url = method.instance_endpoint_url;
+
         method.method = method.method || 'post';
         
         if(!method.action) {
             throw new Error('MarshalledAction MUST specify an action.');
         }
 
-        function invoke(kwargs) {
+        function invoke(self_pk, kwargs) {
             console.warn("invoke for action ", opts.action, " with kwargs ", kwargs);
             var call_opts = {
-                'url': method.url,
+                // 'url': method.url,
                 'method': method.method,
                 'action': method.action,
                 'kwargs': kwargs,
             };
+
+            if(self_pk) {
+                call_opts.pk = self_pk;
+                call_opts.url = method.marshalling.instance_endpoint_url.replace('%7Bpk%7D', self_pk);
+            } else {
+                call_opts.url = method.marshalling.class_endpoint_url;
+            }
 
             var call = MarshalledCall(call_opts);
             return call.send();
@@ -187,7 +201,11 @@ define('icejs/marshalling', function({exports, require, rfr, module}) {
                     } else if(f.t == 'Component') {
                         obs = componentObservable(null);
                     } else {
-                        obs = ko.observable(f.default);
+                        var dv = f.default;
+                        if(dv && typeof dv == 'object') {
+                            dv = dv.constructor();
+                        }
+                        obs = ko.observable(dv);
                     }
 
                     obs.fieldinfo = f; // extra reference per field per instance, a bit heavy
@@ -255,9 +273,20 @@ define('icejs/marshalling', function({exports, require, rfr, module}) {
 
                         // and for component lists
                         } else if(f.t == 'Components') {
+                            if(f.name == 'items') {
+                                console.log("Subscribing to items observable", obs);
+                            }
+
                             obs.subscribeChanged(objs=>{
+                                if(f.name == 'items') {
+
+                                    console.log("Components changed to ", objs, "so trying to chain dirty");
+                                }
                                 _.each(objs, obj=>{
                                     if(obj && obj.dirty && obj.dirty.chained_to && !obj.dirty.chained_to.length) {
+                                        if(f.name == 'items') {
+                                            console.log("Chaining dirty on ", obj);
+                                        }
                                         obj.dirty.chain_to(self.dirty);
                                     }
                                 });
@@ -279,9 +308,10 @@ define('icejs/marshalling', function({exports, require, rfr, module}) {
 
         _.each(blob.marshalled_methods, function(action) {
             var marshalled_method = MarshalledMethod({
-                'url': blob.endpoint_url,
+                'url': blob.class_endpoint_url,
                 'method': 'post',
                 'action': action,
+                'marshalling': blob,
             });
 
             var wrapped = function(kwargs) {
@@ -292,11 +322,14 @@ define('icejs/marshalling', function({exports, require, rfr, module}) {
                     if(!kwargs) return; // bail out.
                 }
 
-                var def = marshalled_method(kwargs);
+                var self_pk = self.pk ? self.pk() : null;
+                var def = marshalled_method(self_pk, kwargs);
                 if(self[action+'/call']) {
                     self[action+'/call'](action, kwargs, def);
                 }
-                self.action_call(def, kwargs); // The global hook.
+                if(self['__marshalled__/call']) {
+                    self['__marshalled__/call'](action, kwargs, def);
+                }
 
                 if(self['__marshalled__/done']) {
                     def.done(_.bind(self['__marshalled__/done'], self));
@@ -321,6 +354,8 @@ define('icejs/marshalling', function({exports, require, rfr, module}) {
                 return def;
                 
             }
+            wrapped.marshalling = blob;
+            wrapped.marshalled_method = marshalled_method;
             methods[action] = wrapped;
 
         });
