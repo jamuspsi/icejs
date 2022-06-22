@@ -226,6 +226,16 @@ define('icejs/marshalling', function({exports, require, rfr, module}) {
                         });
                         obs.fixed.fieldinfo = f;
                     }
+                    if(f.t == 'IntegerField') {
+                        obs.extend({
+                            'clamp': {
+                                min: f.min,
+                                max: f.max,
+                                nullable: f.null,
+                                floor: f.floor,
+                            },
+                        })
+                    }
                     if(f.input_type == 'date') {
                         obs.extend({'datetime': {}});
                     }
