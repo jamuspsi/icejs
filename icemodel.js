@@ -164,6 +164,9 @@ exports.IceModel = IceModel = MarshalledObject.$extend('IceModel', {
             return 'saving';
         }
         if(!self.pk()) {
+            if(self.feedback() && self.feedback().rejected()) {
+                return 'rejected';
+            }
             if(self.feedback() && self.feedback().has_any_error()) {
                 return 'errors';
             }
@@ -172,6 +175,10 @@ exports.IceModel = IceModel = MarshalledObject.$extend('IceModel', {
         
         if(self.dirty()) {
             return 'dirty';
+        }
+
+        if(self.feedback() && self.feedback().rejected()) {
+            return 'rejected';
         }
         if(self.feedback() && self.feedback().has_any_error()) {
             return 'errors';
@@ -190,6 +197,8 @@ ValidationFeedback = Ice.$extend('ValidationFeedback', {
         self.component_feedbacks = ko.observableArray([]);
         self.componentlist_feedbacks = ko.observableArray([]);
         self.has_any_error = ko.observable();
+        self.strictness = ko.observable();
+        self.rejected = ko.observable();
     },
     __keys__: function() {
         return this.$super().concat([
@@ -198,6 +207,8 @@ ValidationFeedback = Ice.$extend('ValidationFeedback', {
             'component_feedbacks',
             'componentlist_feedbacks',
             'has_any_error',
+            'strictness',
+            'rejected',
         ]);
     },
     get: function(fieldname) {
