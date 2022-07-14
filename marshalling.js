@@ -249,8 +249,12 @@ define('icejs/marshalling', function({exports, require, rfr, module}) {
                                 return obs() ? key(obs()) : null;
                             },
                             'write': function(id) {
-                                val = _.find(obs.tweaked_options(), o=>o && key(o) == id);
-                                obs(val); // If this is undefined, sobeit.
+                                if(f.select) {
+                                    val = _.find(obs.tweaked_options(), o=>o && key(o) == id);
+                                    obs(val); // If this is undefined, sobeit.
+                                } else {
+                                    obs(id);
+                                }
                             }
                         });
                         obs._id._object = obs;
