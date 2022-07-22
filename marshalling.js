@@ -224,8 +224,9 @@ define('icejs/marshalling', function({exports, require, rfr, module}) {
                                 nullable: f.null,
                             }
                         });
-                        obs.fixed.fieldinfo = f;
+                        obs.text_input_obs.fieldinfo = f;
                     }
+
                     if(f.t == 'IntegerField') {
                         obs.extend({
                             'clamp': {
