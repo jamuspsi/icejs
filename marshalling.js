@@ -241,7 +241,7 @@ define('icejs/marshalling', function({exports, require, rfr, module}) {
                         obs.extend({'datetime': {}});
                     }
                     if(f.t == 'ForeignKey') {
-                        console.log("Creating _id on ", f.name)
+                        // console.log("Creating _id on ", f.name)
                         var key = key = function(o) { return o.pk ? o.pk() : o; };
 
                         
@@ -289,18 +289,18 @@ define('icejs/marshalling', function({exports, require, rfr, module}) {
                         // and for component lists
                         } else if(f.t == 'Components') {
                             if(f.name == 'items') {
-                                console.log("Subscribing to items observable", obs);
+                                // console.log("Subscribing to items observable", obs);
                             }
 
                             obs.subscribeChanged(objs=>{
                                 if(f.name == 'items') {
 
-                                    console.log("Components changed to ", objs, "so trying to chain dirty");
+                                    // console.log("Components changed to ", objs, "so trying to chain dirty");
                                 }
                                 _.each(objs, obj=>{
                                     if(obj && obj.dirty && obj.dirty.chained_to && !obj.dirty.chained_to.length) {
                                         if(f.name == 'items') {
-                                            console.log("Chaining dirty on ", obj);
+                                            // console.log("Chaining dirty on ", obj);
                                         }
                                         obj.dirty.chain_to(self.dirty);
                                     }
