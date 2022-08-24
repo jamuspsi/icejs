@@ -222,6 +222,8 @@ define('icejs/marshalling', function({exports, require, rfr, module}) {
                         obs.extend({
                             'money': {
                                 nullable: f.null,
+                                min: f.min,
+                                max: f.max,
                             }
                         });
                         obs.text_input_obs.fieldinfo = f;
@@ -237,6 +239,7 @@ define('icejs/marshalling', function({exports, require, rfr, module}) {
                             },
                         })
                     }
+
                     if(f.input_type == 'date') {
                         obs.extend({'datetime': {}});
                     }
