@@ -224,6 +224,7 @@ define('icejs/marshalling', function({exports, require, rfr, module}) {
                                 nullable: f.null,
                                 min: f.min,
                                 max: f.max,
+                                increments_of: f.increments_of,
                             }
                         });
                         obs.text_input_obs.fieldinfo = f;
@@ -236,6 +237,19 @@ define('icejs/marshalling', function({exports, require, rfr, module}) {
                                 max: f.max,
                                 nullable: f.null,
                                 floor: f.floor,
+                            },
+                        })
+                    }
+                    if(f.t == 'DecimalField') {
+                        obs.extend({
+                            'decimal': {
+                                min: f.min,
+                                max: f.max,
+                                nullable: f.null,
+                                floor: f.floor,
+                                increments_of: f.increments_of,
+                                trailing_zeros: f.trailing_zeros,
+
                             },
                         })
                     }
