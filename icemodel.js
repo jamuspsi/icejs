@@ -21,7 +21,7 @@ exports.IceModel = IceModel = MarshalledObject.$extend('IceModel', {
 
         self.vm = null;
 
-        self.feedback = ko.observable(ValidationFeedback());
+        self.feedback = ko.observable(ValidationFeedback.BLANK);
     },
     __keys__: function() {
         return this.$super().concat(['pk']);
@@ -232,6 +232,16 @@ ValidationFeedback = Ice.$extend('ValidationFeedback', {
         return self.object_errors().length;
     },
 });
+
+BlankValidationFeedback = ValidationFeedback.$extend('BlankValidationFeedback', {
+    __init__: function() {
+        var self = this;
+        self.$super();
+
+        self.is_blank = true;
+    },
+});
+ValidationFeedback.BLANK = BlankValidationFeedback();
 
 
 
