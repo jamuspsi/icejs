@@ -218,6 +218,7 @@ define('icejs/marshalling', function({exports, require, rfr, module}) {
                             }
                         })
                     }
+                    /*
                     if(f.money) {
                         obs.extend({
                             'money': {
@@ -229,7 +230,8 @@ define('icejs/marshalling', function({exports, require, rfr, module}) {
                         });
                         obs.text_input_obs.fieldinfo = f;
                     }
-
+                    */
+                    
                     if(f.t == 'IntegerField') {
                         obs.extend({
                             'clamp': {
@@ -241,6 +243,11 @@ define('icejs/marshalling', function({exports, require, rfr, module}) {
                         })
                     }
                     if(f.t == 'DecimalField') {
+                        var textextender = 'decimal';
+                        if(f.money) {
+                            textextender = 'money';
+                        }
+
                         obs.extend({
                             'decimal': {
                                 min: f.min,
