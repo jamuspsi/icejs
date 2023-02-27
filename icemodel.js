@@ -149,8 +149,36 @@ exports.IceModel = IceModel = MarshalledObject.$extend('IceModel', {
             var field = self[fieldname];
             if(field.isComponentList && field()) {
                 var comps = field();
+                var by_pk = _.indexBy(comps, c=>c.pk());
+                var by_tpk = _.indexBy(comps, c=>c.ICEID);
+
                 _.each(subs, function(sub, i) {
-                    comps[i].set_feedback(sub);
+                    var c;
+                    if(sub.pk() !== null) {
+                        c = by_pk[sub.pk()];
+                    }
+                    if(!c && sub.__tpk__() !== null) {
+                        c = by_tpk[sub.__tpk__()];
+                    }
+                    if(!c && i < comps.length) {
+                        c = comps[i];
+                    }
+                    if(c) {
+                        c.set_feedback(sub);
+                    } else {
+                        console.warn("Could not map feedback for an item.", {
+                            'class': self.$class.$name,
+                            'fieldname': self.fieldname,
+                            'comps': comps,
+                            'by_pk': by_pk,
+                            'by_tpk': by_tpk,
+                            'pk': sub.pk(),
+                            'tpk': sub.__tpk__(),
+                            'i': i,
+                            'sub': sub,
+                        });
+                    }
+                    
                 });                
             }
         });
@@ -199,6 +227,9 @@ ValidationFeedback = Ice.$extend('ValidationFeedback', {
         self.has_any_error = ko.observable();
         self.strictness = ko.observable();
         self.rejected = ko.observable();
+        self.pk = ko.observable();
+        self.__tpk__ = ko.observable();
+
     },
     __keys__: function() {
         return this.$super().concat([
@@ -209,6 +240,8 @@ ValidationFeedback = Ice.$extend('ValidationFeedback', {
             'has_any_error',
             'strictness',
             'rejected',
+            'pk',
+            'tpk',
         ]);
     },
     get: function(fieldname) {

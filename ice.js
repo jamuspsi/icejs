@@ -358,6 +358,7 @@ exports.Ice = Ice = Class.$extend('Ice', {
             }
             patch[key] = val;
         });
+        patch.__tpk__ = self.ICEID;
         return patch;
     },
     update_from_jsonable: function(jsonable) {

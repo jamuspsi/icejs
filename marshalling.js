@@ -229,7 +229,54 @@ define('icejs/marshalling', function({exports, require, rfr, module}) {
                     obs.fieldinfo = f; // extra reference per field per instance, a bit heavy
 
                     if(f.t == 'ForeignKey') {
-                        var object_obs = obs;
+                        var obs = ko.observable();
+                        obs._trans_update = false;
+                        var _id = ko.observable();
+                        obs._id = _id;
+                        obs.fieldinfo = f;
+                        obs.object_lookup = null;
+                        obs.refresh = function() {
+                            var newval = _id();
+                            if(newval !== null && newval !== undefined) {
+                                if(obs.object_lookup) {
+                                    var obj = obs.object_lookup(newval);
+                                    obs(obj);
+                                }
+                            }
+
+                        }
+                        // when ID is set, attempt to set obs if possible.
+
+                        _id.subscribeChanged(function(newval) {
+                            if(obs._trans_update) {
+                                return;
+                            }
+                            obs._trans_update = true;
+                            try {
+                                obs.refresh();
+                            } finally {
+                                obs._trans_update = false;
+                            }
+
+                        });
+                        obs.subscribeChanged(function(newval) {
+                            if(obs._trans_update) {
+                                return;
+                            }
+                            obs._trans_update = true;
+
+                            try {   
+                                if(!newval) {
+                                    _id(newval);
+                                } else {
+                                    _id(newval.pk());
+                                }
+                            } finally {
+                                obs._trans_update = false;
+                            }
+                        });
+                        /*
+                        var object_obs = ko.observable();
                         object_obs.poking = 0;
                         obs = ko.pure({
                             read: function() {
@@ -257,6 +304,7 @@ define('icejs/marshalling', function({exports, require, rfr, module}) {
                                 object_obs.poking -= 1;
                             },
                         });
+                        obs.object_obs = object_obs;
                         obs.fieldinfo = f;
                         obs._id = ko.observable();
                         obs.object_lookup = null;
@@ -268,31 +316,9 @@ define('icejs/marshalling', function({exports, require, rfr, module}) {
                                 object_obs.poking -= 1;
                             }
                         });
-                        self[f.name+'_id'] = obs._id;
-
-                        /*
-                        // console.log("Creating _id on ", f.name)
-                        var key = key = function(o) { return o.pk ? o.pk() : o; };
-
-                                                
-                        obs._id = ko.pure({
-                            'read': function() {
-                                return obs() ? key(obs()) : null;
-                            },
-                            'write': function(id) {
-
-                                if(f.select) {
-                                    console.log("Attempting to write a selectable, writable _id field with ", id);
-                                    val = _.find(obs.tweaked_options(), o=>o && key(o) == id);
-                                    obs(val); // If this is undefined, sobeit.
-                                } else {
-                                    obs(id);
-                                }
-                            }
-                        });
-                        obs._id._object = obs;
-                        self[f.name+'_id'] = obs._id;
                         */
+                        self[f.name+'_id'] = obs._id;
+
                     }
 
                     if(f.select) {
