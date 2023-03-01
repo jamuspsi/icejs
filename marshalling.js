@@ -240,7 +240,11 @@ define('icejs/marshalling', function({exports, require, rfr, module}) {
                             if(newval !== null && newval !== undefined) {
                                 if(obs.object_lookup) {
                                     var obj = obs.object_lookup(newval);
-                                    obs(obj);
+                                    if(obs.update_without_soil) {
+                                        obs.update_without_soil(obj);
+                                    } else {
+                                        obs(obj);
+                                    }
                                 }
                             }
 
@@ -379,7 +383,7 @@ define('icejs/marshalling', function({exports, require, rfr, module}) {
                     
 
                     if(self.feedback) {
-                        obs.feedback = self.feedback;
+                    obs.feedback = self.feedback;
                         obs.error = ()=>self.feedback().get(f.name);
 
                         if(obs.fixed) {
