@@ -264,6 +264,30 @@ ValidationFeedback = Ice.$extend('ValidationFeedback', {
         var self = this;
         return self.object_errors().length;
     },
+    all_errors_debug: function(path) {
+        var self = this;
+        if(!path) {
+            path = '';
+        }
+        var errors = [];
+        _.each(self.fields(), function(errs, fieldname) {
+            _.each(errs, function(err) {
+                errors.push(path + '.' + fieldname + ': ' + err);
+            });
+        });
+        _.each(self.component_feedbacks(), function(sub, fieldname) {
+            var inner_errors = sub.all_errors_debug(path + '.' + fieldname);
+            errors.push(...inner_errors);
+        });
+        _.each(self.componentlist_feedbacks(), function(subs, fieldname) {
+            _.each(subs, function(sub, i) {
+                var inner_errors = sub.all_errors_debug(path + '.' + fieldname + '[' + i + ']');
+                errors.push(...inner_errors);
+            });
+        });
+        return errors;
+
+    },
 });
 
 BlankValidationFeedback = ValidationFeedback.$extend('BlankValidationFeedback', {

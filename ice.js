@@ -408,7 +408,7 @@ exports.Ice = Ice = Class.$extend('Ice', {
                 // We're going to update this in place.
                 // Wait, this doesn't work.  the component class may have changed.
                 if(target.isComponent) {
-                    if(target().$class === srcval.$class) {
+                    if(srcval && target().$class === srcval.$class) {
                         // update it if the class is the same.
                         target().update_from_instance(srcval)
                     } else {
