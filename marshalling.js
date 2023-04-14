@@ -419,10 +419,10 @@ define('icejs/marshalling', function({exports, require, rfr, module}) {
                                     // console.log("Components changed to ", objs, "so trying to chain dirty");
                                 }
                                 _.each(objs, obj=>{
-                                    if(obj && obj.dirty && obj.dirty.chained_to && !obj.dirty.chained_to.length) {
-                                        if(f.name == 'items') {
-                                            // console.log("Chaining dirty on ", obj);
-                                        }
+                                    if(obj && obj.dirty && obj.dirty.chained_to) {
+                                        // if(f.name == 'subcontract_items') {
+                                        //     console.log("Chaining dirty on ", obj);
+                                        // }
                                         obj.dirty.chain_to(self.dirty);
                                     }
                                 });
