@@ -380,10 +380,10 @@ exports.Ice = Ice = Class.$extend('Ice', {
                     target.forwardref(val);
                 } else if(target.isIndexedObservable) {
                     target.list(val);
-                } else {
+                } else if(val !== undefined) {
                     target(val);
                 }
-            } else {
+            } else if(val !== undefined) {
                 self[key] = val;
             }
         });
