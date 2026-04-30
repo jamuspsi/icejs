@@ -1,7 +1,7 @@
 var define = (this.nodeish||require('@nodeish'))(this.window||arguments);
 define('icemodel', function({exports, require, rfr, module}) {
 
-    var {Ice} = rfr('icejs', 'icejs/ice.js');
+    var {Ice, componentObservable, componentListObservable, indexedListObservable} = rfr('icejs', 'icejs/ice.js');
     var {MarshalledObject} = rfr('icejs/marshalling', 'icejs/marshalling.js');
 
     var ko = rfr('ko', 'koplus/knockout-3.4.0.koplus.js', 'ko');
@@ -213,6 +213,89 @@ exports.IceModel = IceModel = MarshalledObject.$extend('IceModel', {
         }
         return 'saved';
     },
+
+    observable(...args) {
+        var obs = ko.observable(...args).extend({report_dirty: this.dirty});
+        return obs;
+    },
+    observableArray(...args) {
+        var obs = ko.observableArray(...args).extend({report_dirty: this.dirty});;
+        return obs;
+    },
+
+    component(defaultval, constructor) {
+        var obs = componentObservable(defaultval, constructor);
+        obs.extend({'report_dirty': this.dirty});
+        obs.subscribeChanged((newval, oldval)=>{
+            if(oldval) {
+                if(oldval.__parent__ && oldval.__parent__() === this) {
+                    // not sure about this, might break some stuff.
+                    // oldval.__parent__(null);
+                }
+                if(oldval.dirty) {
+                    oldval.dirty.unchain(this.dirty);
+                }
+            }
+            if(newval) {
+                if(newval.__parent__)
+                    newval.__parent__(this);
+                if(newval.dirty) {
+                    newval.dirty.chain_to(this.dirty);
+                }
+            }
+        });
+
+        return obs;
+    },
+    componentList(defaultval, constructor) {
+        var obs = componentListObservable(defaultval, constructor);
+        obs.extend({'report_dirty': this.dirty});
+        function fn(changes) {
+            changes.forEach(({status, value, moved})=>{
+                if(moved !== undefined) return;
+                if(status == 'deleted' && value) {
+                    if(value.__parent__ && value.__parent__() === this) {
+                        // again not sure about this.
+                        // value.__parent__(null);
+                    }
+                    value.dirty.unchain(this.dirty);
+                } else if(status == 'added' && value) {
+                    if(value.__parent__) {
+                        value.__parent__(this);
+                    }
+                    value.dirty.chain_to(this.dirty);
+                }
+            });
+        }
+        obs.subscribe(fn, this, "arrayChange");
+
+        return obs;
+    },
+    componentIndexedList(defaultval, opts) {
+        var obs = indexedListObservable(defaultval, opts);
+        obs.list.extend({'report_dirty': this.dirty});
+        function fn(changes) {
+            changes.forEach(({status, value, moved})=>{
+                if(moved !== undefined) return;
+                if(status == 'deleted' && value) {
+                    if(value.__parent__ && value.__parent__() === this) {
+                        // again not sure about this.
+                        // value.__parent__(null);
+                    }
+                    value.dirty.unchain(this.dirty);
+                } else if(status == 'added' && value) {
+                    if(value.__parent__) {
+                        value.__parent__(this);
+                    }
+                    value.dirty.chain_to(this.dirty);
+                }
+            });
+        }
+        obs.list.subscribe(fn, this, "arrayChange");
+
+        return obs;
+    },
+
 });
 
 ValidationFeedback = Ice.$extend('ValidationFeedback', {

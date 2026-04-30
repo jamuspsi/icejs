@@ -21,7 +21,7 @@ if(ko) {
         return obj;
     };
 
-    var componentObservable = exports.componentObservable = function(val) {
+    var componentObservable = exports.componentObservable = function(val, constructor) {
         var obs;
         if(ko.isObservable(val)) {
             obs = val;
@@ -29,10 +29,24 @@ if(ko) {
             obs = ko.observable(val);
         }
         obs.isComponent = true;
+
+
+        if(constructor) {
+            obs.componentConstructor = constructor;
+            obs.set_new = function() {
+                var obj = new obs.componentConstructor();
+                obs(obj);
+                return obj;
+            }
+            obs.create = function() {
+                return new obs.componentConstructor();
+            }
+        }
+
         return obs;
     }
 
-    var componentListObservable = exports.componentListObservable = function(val) {
+    var componentListObservable = exports.componentListObservable = function(val, constructor) {
         var obs;
         if(ko.isObservable(val)) {
             obs = val;
@@ -40,6 +54,20 @@ if(ko) {
             obs = ko.observableArray(val || []);
         }
         obs.isComponentList = true;
+
+        if(constructor) {
+            obs.componentConstructor = constructor;
+            obs.push_new = function() {
+                var obj = obs.componentConstructor();
+                obs.push(obj);
+                return obj;
+            }
+            obs.create = function() {
+                return new obs.componentConstructor();
+            }
+        }
+
+
         return obs;
     }
 
@@ -76,6 +104,19 @@ if(ko) {
         obs.list = list;
         obs.isIndexedObservable = true;
         obs.isComponentList = true;
+
+        if(opts.constructor) {
+            obs.componentConstructor = constructor;
+            obs.push_new = function() {
+                var obj = obs.componentConstructor();
+                obs.list.push(obj);
+                return obj;
+            }
+            obs.create = function() {
+                return new obs.componentConstructor();
+            }
+        }
+
         return obs;
     };
 
@@ -408,7 +449,7 @@ exports.Ice = Ice = Class.$extend('Ice', {
                 // We're going to update this in place.
                 // Wait, this doesn't work.  the component class may have changed.
                 if(target.isComponent) {
-                    if(srcval && target().$class === srcval.$class) {
+                    if(srcval && target() && target().$class === srcval.$class) {
                         // update it if the class is the same.
                         target().update_from_instance(srcval)
                     } else {
